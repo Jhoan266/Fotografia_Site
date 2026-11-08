@@ -62,10 +62,22 @@
     "label": "Processus",
     "title": "De la réservation à la livraison",
     "steps": {
-      "1": { "title": "Conversation", "body": "On parle du ton, du lieu et de ce qui compte." },
-      "2": { "title": "Séance", "body": "Direction douce, rythme naturel, lumière soignée." },
-      "3": { "title": "Retouche", "body": "Sélection et développement personnels — pas de filtres génériques." },
-      "4": { "title": "Galerie privée", "body": "Accès en ligne : favoris, commentaires et téléchargement." }
+      "1": {
+        "title": "Conversation",
+        "body": "On parle du ton, du lieu et de ce qui compte."
+      },
+      "2": {
+        "title": "Séance",
+        "body": "Direction douce, rythme naturel, lumière soignée."
+      },
+      "3": {
+        "title": "Retouche",
+        "body": "Sélection et développement personnels — pas de filtres génériques."
+      },
+      "4": {
+        "title": "Galerie privée",
+        "body": "Accès en ligne : favoris, commentaires et téléchargement."
+      }
     }
   },
   "contact": {
@@ -135,6 +147,7 @@
     "delivered": "Livré",
     "archived": "Archivé",
     "photos": "Photos",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "deletePhoto": "Supprimer"
   }
 }

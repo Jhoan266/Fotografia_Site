@@ -1,4 +1,5 @@
 export {
+  deleteStoredFile,
   openStoredFileStream,
   readStoredFile,
   savePhoto,

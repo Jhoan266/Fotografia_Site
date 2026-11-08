@@ -62,10 +62,22 @@
     "label": "Proceso",
     "title": "De la reserva a la entrega",
     "steps": {
-      "1": { "title": "Conversación", "body": "Hablamos del tono, el lugar y lo que importa." },
-      "2": { "title": "Sesión", "body": "Dirección suave, ritmo natural, luz cuidada." },
-      "3": { "title": "Edición", "body": "Selección y revelado personal, sin filtros genéricos." },
-      "4": { "title": "Galería privada", "body": "Accedes online: favoritos, comentarios y descarga." }
+      "1": {
+        "title": "Conversación",
+        "body": "Hablamos del tono, el lugar y lo que importa."
+      },
+      "2": {
+        "title": "Sesión",
+        "body": "Dirección suave, ritmo natural, luz cuidada."
+      },
+      "3": {
+        "title": "Edición",
+        "body": "Selección y revelado personal, sin filtros genéricos."
+      },
+      "4": {
+        "title": "Galería privada",
+        "body": "Accedes online: favoritos, comentarios y descarga."
+      }
     }
   },
   "contact": {
@@ -135,6 +147,7 @@
     "delivered": "Entregado",
     "archived": "Archivado",
     "photos": "Fotos",
-    "save": "Guardar"
+    "save": "Guardar",
+    "deletePhoto": "Eliminar"
   }
 }

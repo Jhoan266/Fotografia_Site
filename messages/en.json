@@ -62,10 +62,22 @@
     "label": "Process",
     "title": "From booking to delivery",
     "steps": {
-      "1": { "title": "Conversation", "body": "We talk about tone, place and what matters." },
-      "2": { "title": "Session", "body": "Soft direction, natural rhythm, careful light." },
-      "3": { "title": "Editing", "body": "Personal selection and grading — no generic filters." },
-      "4": { "title": "Private gallery", "body": "You access online: favorites, comments and download." }
+      "1": {
+        "title": "Conversation",
+        "body": "We talk about tone, place and what matters."
+      },
+      "2": {
+        "title": "Session",
+        "body": "Soft direction, natural rhythm, careful light."
+      },
+      "3": {
+        "title": "Editing",
+        "body": "Personal selection and grading — no generic filters."
+      },
+      "4": {
+        "title": "Private gallery",
+        "body": "You access online: favorites, comments and download."
+      }
     }
   },
   "contact": {
@@ -135,6 +147,7 @@
     "delivered": "Delivered",
     "archived": "Archived",
     "photos": "Photos",
-    "save": "Save"
+    "save": "Save",
+    "deletePhoto": "Delete"
   }
 }

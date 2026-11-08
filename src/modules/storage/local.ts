@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from "fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
 import type { StorageProvider } from "@/modules/storage/types";
@@ -41,6 +41,10 @@ export class LocalStorageProvider implements StorageProvider {
     } catch {
       return false;
     }
+  }
+
+  async delete(key: string) {
+    await rm(resolveStorageKey(key), { force: true });
   }
 
   openReadStream(key: string) {
