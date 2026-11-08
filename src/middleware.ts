@@ -2,7 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { routing } from "@/i18n/routing";
-import { AppSessionData, sessionOptions } from "@/lib/session";
+import { AppSessionData, getSessionOptions } from "@/lib/session";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -18,14 +18,12 @@ export default async function middleware(request: NextRequest) {
     pathWithoutLocale.startsWith("/app") ||
     pathWithoutLocale.startsWith("/admin");
 
-  if (!needsAuth) {
-    return response;
-  }
+  if (!needsAuth) return response;
 
   const session = await getIronSession<AppSessionData>(
     request,
     response,
-    sessionOptions,
+    getSessionOptions(),
   );
 
   if (!session.user) {
@@ -34,10 +32,6 @@ export default async function middleware(request: NextRequest) {
 
   if (pathWithoutLocale.startsWith("/admin") && session.user.role !== "ADMIN") {
     return NextResponse.redirect(new URL(`/${locale}/app`, request.url));
-  }
-
-  if (pathWithoutLocale.startsWith("/app") && session.user.role === "ADMIN") {
-    // Admins can peek client area if needed — allow
   }
 
   return response;
