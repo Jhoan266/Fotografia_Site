@@ -88,13 +88,35 @@ export default async function ProjectGalleryPage({
                     className="mt-4"
                     action={async () => {
                       "use server";
+                      const currentUser = await requireUser();
+                      if (!currentUser) return;
+
+                      const currentProject = await prisma.project.findUnique({
+                        where: { id: project.id },
+                        include: {
+                          client: true,
+                          packs: { where: { packId: pack.id }, include: { pack: true } },
+                        },
+                      });
+
+                      const currentPack = currentProject?.packs[0]?.pack;
+                      if (!currentProject || !currentPack || !currentPack.active) return;
+
+                      if (
+                        currentUser.role === "CLIENT" &&
+                        (currentProject.client.userId !== currentUser.id ||
+                          currentProject.status !== "DELIVERED")
+                      ) {
+                        return;
+                      }
+
                       await prisma.order.create({
                         data: {
-                          userId: user.id,
-                          projectId: project.id,
-                          packId: pack.id,
-                          amountCents: pack.priceCents,
-                          currency: pack.currency,
+                          userId: currentUser.id,
+                          projectId: currentProject.id,
+                          packId: currentPack.id,
+                          amountCents: currentPack.priceCents,
+                          currency: currentPack.currency,
                           status: "UNPAID",
                         },
                       });
