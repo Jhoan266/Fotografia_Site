@@ -3,9 +3,8 @@ import { ZipArchive } from "archiver";
 import { Readable } from "stream";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { absoluteStoragePath } from "@/lib/storage";
+import { openStoredFileStream, storedFileExists } from "@/lib/storage";
 import { sanitizeFilename } from "@/lib/security";
-import { createReadStream, existsSync } from "fs";
 
 export const runtime = "nodejs";
 
@@ -57,8 +56,7 @@ export async function GET(request: NextRequest) {
   const usedNames = new Set<string>();
 
   for (const photo of photos) {
-    const full = absoluteStoragePath(photo.storageKey);
-    if (!existsSync(full)) continue;
+    if (!(await storedFileExists(photo.storageKey))) continue;
 
     const baseName = sanitizeFilename(photo.filename);
     let name = baseName;
@@ -70,7 +68,7 @@ export async function GET(request: NextRequest) {
         : `${baseName}-${n++}`;
     }
     usedNames.add(name);
-    archive.append(createReadStream(full), { name });
+    archive.append(await openStoredFileStream(photo.storageKey), { name });
   }
 
   void archive.finalize();
