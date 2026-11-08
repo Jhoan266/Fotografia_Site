@@ -47,7 +47,9 @@ export function GalleryClient({
 
   const favoritesCount = photos.filter((photo) => photo.favorite).length;
   const selectedCount = photos.filter((photo) => photo.selected).length;
-  const activeIndex = activeId ? photos.findIndex((photo) => photo.id === activeId) : -1;
+  const activeIndex = activeId
+    ? photos.findIndex((photo) => photo.id === activeId)
+    : -1;
   const active = activeIndex >= 0 ? photos[activeIndex] : null;
 
   const closeViewer = useCallback(() => {
@@ -60,20 +62,26 @@ export function GalleryClient({
     }
   }, []);
 
-  const navigateViewer = useCallback((direction: -1 | 1) => {
-    draftVersion.current++;
-    if (activeIndex < 0 || photos.length < 2) return;
-    const nextIndex = (activeIndex + direction + photos.length) % photos.length;
-    setActiveId(photos[nextIndex].id);
-    setComment("");
-  }, [activeIndex, photos]);
+  const navigateViewer = useCallback(
+    (direction: -1 | 1) => {
+      draftVersion.current++;
+      if (activeIndex < 0 || photos.length < 2) return;
+      const nextIndex =
+        (activeIndex + direction + photos.length) % photos.length;
+      setActiveId(photos[nextIndex].id);
+      setComment("");
+    },
+    [activeIndex, photos],
+  );
 
   useEffect(() => {
     if (!viewerOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
-    return () => { document.body.style.overflow = previousOverflow; };
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [viewerOpen]);
 
   useEffect(() => {
@@ -85,19 +93,35 @@ export function GalleryClient({
         closeViewer();
       }
       if (event.key === "Tab") {
-        const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]',
-        ) ?? []).filter((element) => element.getClientRects().length > 0);
+        const elements = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]',
+          ) ?? [],
+        ).filter((element) => element.getClientRects().length > 0);
         const first = elements[0];
         const last = elements[elements.length - 1];
-        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
-          event.preventDefault(); last?.focus();
-        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
-          event.preventDefault(); first?.focus();
+        if (
+          event.shiftKey &&
+          (document.activeElement === first ||
+            !dialogRef.current?.contains(document.activeElement))
+        ) {
+          event.preventDefault();
+          last?.focus();
+        } else if (
+          !event.shiftKey &&
+          (document.activeElement === last ||
+            !dialogRef.current?.contains(document.activeElement))
+        ) {
+          event.preventDefault();
+          first?.focus();
         }
       }
       const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select"))) return;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.closest("input, textarea, select"))
+      )
+        return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         navigateViewer(-1);
@@ -121,15 +145,31 @@ export function GalleryClient({
     if (previous === undefined) return;
     mutationLocks.current.add(key);
     setError(null);
-    setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: !previous } : photo));
+    setPhotos((current) =>
+      current.map((photo) =>
+        photo.id === photoId ? { ...photo, [field]: !previous } : photo,
+      ),
+    );
     try {
-      const response = await fetch(`/api/photos/${photoId}/${field === "favorite" ? "favorite" : "select"}`, { method: "POST" });
+      const response = await fetch(
+        `/api/photos/${photoId}/${field === "favorite" ? "favorite" : "select"}`,
+        { method: "POST" },
+      );
       if (!response.ok) throw new Error("Photo update failed");
       const data = await response.json();
-      if (typeof data[field] !== "boolean") throw new Error("Invalid photo response");
-      setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: data[field] } : photo));
+      if (typeof data[field] !== "boolean")
+        throw new Error("Invalid photo response");
+      setPhotos((current) =>
+        current.map((photo) =>
+          photo.id === photoId ? { ...photo, [field]: data[field] } : photo,
+        ),
+      );
     } catch {
-      setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: previous } : photo));
+      setPhotos((current) =>
+        current.map((photo) =>
+          photo.id === photoId ? { ...photo, [field]: previous } : photo,
+        ),
+      );
       setError(t("saveError"));
     } finally {
       mutationLocks.current.delete(key);
@@ -145,12 +185,19 @@ export function GalleryClient({
     setError(null);
     try {
       const response = await fetch(`/api/photos/${photoId}/comment`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: text }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: text }),
       });
       if (!response.ok) throw new Error("Comment failed");
       const data = await response.json();
-      setPhotos((current) => current.map((photo) => photo.id === photoId
-        ? { ...photo, comments: [data.comment, ...photo.comments] } : photo));
+      setPhotos((current) =>
+        current.map((photo) =>
+          photo.id === photoId
+            ? { ...photo, comments: [data.comment, ...photo.comments] }
+            : photo,
+        ),
+      );
       if (version === draftVersion.current) setComment("");
     } catch {
       setError(t("saveError"));
@@ -161,20 +208,28 @@ export function GalleryClient({
   }
 
   return (
-    <div>
-      {error && !active && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
+    <div className="portal-photo-experience">
+      {error && !active && (
+        <p role="alert" className="mt-4 text-sm text-red-300">
+          {error}
+        </p>
+      )}
       <section
         aria-label={t("selectionSummary")}
-        className="mt-8 grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3"
+        className="portal-gallery-summary"
       >
         <GalleryStat value={photos.length} label={t("totalPhotos")} />
         <GalleryStat value={favoritesCount} label={t("favoriteCount")} />
         <GalleryStat value={selectedCount} label={t("selectedCount")} />
       </section>
 
-      <div className="sticky top-0 z-20 -mx-5 mt-6 border-y border-white/10 bg-[#0c0c0c]/95 px-5 py-3 backdrop-blur md:-mx-8 md:px-8">
+      <div className="portal-gallery-toolbar">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t("galleryFilters")}>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label={t("galleryFilters")}
+          >
             {(
               [
                 ["all", t("filterAll"), photos.length],
@@ -212,11 +267,11 @@ export function GalleryClient({
           <p className="text-sm text-white/50">{t("emptyFilter")}</p>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((photo) => (
+        <div className="portal-photo-grid">
+          {visible.map((photo, index) => (
             <article
               key={photo.id}
-              className="group relative overflow-hidden border border-transparent bg-ink-soft transition hover:border-white/20"
+              className="portal-photo-card group relative overflow-hidden border border-transparent bg-ink-soft transition hover:border-white/20"
             >
               <button
                 ref={(node) => {
@@ -224,7 +279,13 @@ export function GalleryClient({
                   else triggerRefs.current.delete(photo.id);
                 }}
                 type="button"
-                onClick={() => { draftVersion.current++; viewerTrigger.current = photo.id; setComment(""); setError(null); setActiveId(photo.id); }}
+                onClick={() => {
+                  draftVersion.current++;
+                  viewerTrigger.current = photo.id;
+                  setComment("");
+                  setError(null);
+                  setActiveId(photo.id);
+                }}
                 className="block aspect-[4/5] w-full overflow-hidden text-left"
                 aria-label={photo.filename}
               >
@@ -248,10 +309,14 @@ export function GalleryClient({
               </button>
 
               {photo.selected && (
-                <span className="absolute bottom-3 left-3 bg-sand px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-ink uppercase">
+                <span className="portal-selected-badge">
                   {t("selectedBadge")}
                 </span>
               )}
+              <div className="portal-photo-caption">
+                <span>{photo.filename}</span>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+              </div>
             </article>
           ))}
         </div>
@@ -305,7 +370,9 @@ export function GalleryClient({
                   <p className="text-xs text-white/40">
                     {activeIndex + 1} / {photos.length}
                   </p>
-                  <p className="mt-1 truncate text-sm text-white/80">{active.filename}</p>
+                  <p className="mt-1 truncate text-sm text-white/80">
+                    {active.filename}
+                  </p>
                 </div>
                 <button
                   ref={closeButtonRef}
@@ -322,7 +389,9 @@ export function GalleryClient({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    className={active.favorite ? "btn-primary !py-2" : "btn-ghost !py-2"}
+                    className={
+                      active.favorite ? "btn-primary !py-2" : "btn-ghost !py-2"
+                    }
                     aria-pressed={active.favorite}
                     onClick={() => void togglePhoto(active.id, "favorite")}
                   >
@@ -330,7 +399,9 @@ export function GalleryClient({
                   </button>
                   <button
                     type="button"
-                    className={active.selected ? "btn-primary !py-2" : "btn-ghost !py-2"}
+                    className={
+                      active.selected ? "btn-primary !py-2" : "btn-ghost !py-2"
+                    }
                     aria-pressed={active.selected}
                     onClick={() => void togglePhoto(active.id, "selected")}
                   >
@@ -348,14 +419,22 @@ export function GalleryClient({
                 <div className="mt-8">
                   <h3 className="section-label">{t("comments")}</h3>
                   {active.comments.length === 0 ? (
-                    <p className="mt-4 text-sm text-white/40">{t("noComments")}</p>
+                    <p className="mt-4 text-sm text-white/40">
+                      {t("noComments")}
+                    </p>
                   ) : (
                     <ul className="mt-4 space-y-4">
                       {active.comments.map((item) => (
-                        <li key={item.id} className="border-l border-sand/40 pl-3 text-sm text-white/70">
-                          <p className="whitespace-pre-wrap break-words">{item.body}</p>
+                        <li
+                          key={item.id}
+                          className="border-l border-sand/40 pl-3 text-sm text-white/70"
+                        >
+                          <p className="whitespace-pre-wrap break-words">
+                            {item.body}
+                          </p>
                           <p className="mt-1 text-[11px] text-white/35">
-                            {item.author} · {new Date(item.createdAt).toLocaleString(locale)}
+                            {item.author} ·{" "}
+                            {new Date(item.createdAt).toLocaleString(locale)}
                           </p>
                         </li>
                       ))}
@@ -365,7 +444,11 @@ export function GalleryClient({
               </div>
 
               <div className="border-t border-white/10 p-4">
-                {error && <p role="alert" className="mb-3 text-sm text-red-300">{error}</p>}
+                {error && (
+                  <p role="alert" className="mb-3 text-sm text-red-300">
+                    {error}
+                  </p>
+                )}
                 <div className="flex gap-2">
                   <input
                     className="input-field"
@@ -373,7 +456,10 @@ export function GalleryClient({
                     maxLength={2000}
                     disabled={pending}
                     aria-label={t("commentPlaceholder")}
-                    onChange={(event) => { draftVersion.current++; setComment(event.target.value); }}
+                    onChange={(event) => {
+                      draftVersion.current++;
+                      setComment(event.target.value);
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
@@ -402,9 +488,11 @@ export function GalleryClient({
 
 function GalleryStat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="bg-[#101010] px-5 py-4">
+    <div className="portal-gallery-stat">
       <p className="font-display text-2xl text-white">{value}</p>
-      <p className="mt-1 text-[10px] tracking-[0.18em] text-white/40 uppercase">{label}</p>
+      <p className="mt-1 text-[10px] tracking-[0.18em] text-white/40 uppercase">
+        {label}
+      </p>
     </div>
   );
 }
