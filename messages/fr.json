@@ -159,6 +159,16 @@
     "archived": "Archivé",
     "photos": "Photos",
     "save": "Enregistrer",
-    "deletePhoto": "Supprimer"
+    "deletePhoto": "Supprimer",
+    "welcome": "Bonjour, {name}",
+    "dashboardDescription": "Vos clients, séances et livraisons au même endroit.",
+    "recentProjects": "Projets récents",
+    "viewAll": "Voir tout",
+    "emptyProjects": "Aucun projet pour le moment",
+    "emptyProjectsDescription": "Créez votre première séance et préparez une galerie privée pour votre client.",
+    "deliveryOverview": "État des livraisons",
+    "deliveryDescription": "Un aperçu de tous vos projets.",
+    "emptyClients": "Aucun client pour le moment",
+    "emptyClientsDescription": "Ajoutez un client pour organiser ses séances."
   }
 }

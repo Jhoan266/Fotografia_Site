@@ -159,6 +159,16 @@
     "archived": "Archived",
     "photos": "Photos",
     "save": "Save",
-    "deletePhoto": "Delete"
+    "deletePhoto": "Delete",
+    "welcome": "Hello, {name}",
+    "dashboardDescription": "Your clients, sessions and deliveries in one place.",
+    "recentProjects": "Recent projects",
+    "viewAll": "View all",
+    "emptyProjects": "No projects yet",
+    "emptyProjectsDescription": "Create your first session and prepare a private gallery for your client.",
+    "deliveryOverview": "Delivery overview",
+    "deliveryDescription": "An overview of all your projects.",
+    "emptyClients": "No clients yet",
+    "emptyClientsDescription": "Add a client to start organizing their sessions."
   }
 }

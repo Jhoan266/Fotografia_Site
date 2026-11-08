@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { getTranslations } from "next-intl/server";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
@@ -18,7 +19,7 @@ export async function AppHeader({
 
   return (
     <header className="border-b border-white/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 md:px-8">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8">
         <BrandMark
           locale={locale}
           href={mode === "admin" ? `/${locale}/admin` : `/${locale}/app`}
@@ -31,17 +32,7 @@ export async function AppHeader({
               {t("sessions")}
             </Link>
           ) : (
-            <>
-              <Link href={`/${locale}/admin`} className="hover:text-white">
-                {t("panel")}
-              </Link>
-              <Link href={`/${locale}/admin/clients`} className="hover:text-white">
-                {t("clients")}
-              </Link>
-              <Link href={`/${locale}/admin/projects`} className="text-sand hover:text-sand-soft">
-                {t("projects")}
-              </Link>
-            </>
+            <AdminNavigation locale={locale} labels={{ panel: t("panel"), clients: t("clients"), projects: t("projects") }} />
           )}
           <span className="hidden text-white/40 sm:inline">·</span>
           <span className="text-white/90">{user.name}</span>

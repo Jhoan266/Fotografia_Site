@@ -1,3 +1,4 @@
+import { Button, EmptyState, FormField } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -24,7 +25,8 @@ export default async function AdminClientsPage({
         <div>
           <p className="section-label">{t("clients")}</p>
           <h1 className="mt-3 font-display text-4xl font-semibold">{t("clients")}</h1>
-          <ul className="mt-8 space-y-4">
+          <div className="mt-8">{clients.length === 0 && <EmptyState title={t("emptyClients")} description={t("emptyClientsDescription")} />}</div>
+          <ul className="mt-4 space-y-4">
             {clients.map((c) => (
               <li key={c.id} className="border-b border-white/10 pb-4">
                 <p className="text-lg">{c.user.name}</p>
@@ -39,12 +41,12 @@ export default async function AdminClientsPage({
             ))}
           </ul>
         </div>
-        <form action={createClientFromForm.bind(null, locale)} className="space-y-4 border border-white/10 p-6">
+        <form id="new-client" action={createClientFromForm.bind(null, locale)} className="ds-card scroll-mt-6 space-y-4 p-6">
           <h2 className="font-display text-2xl">{t("newClient")}</h2>
-          <Field label={t("name")} name="name" required maxLength={120} />
-          <Field label={t("email")} name="email" type="email" required maxLength={254} />
-          <Field label={t("phone")} name="phone" maxLength={40} />
-          <Field
+          <FormField label={t("name")} name="name" required maxLength={120} />
+          <FormField label={t("email")} name="email" type="email" required maxLength={254} />
+          <FormField label={t("phone")} name="phone" maxLength={40} />
+          <FormField
             label={t("password")}
             name="password"
             type="password"
@@ -57,34 +59,10 @@ export default async function AdminClientsPage({
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("notes")}</span>
             <textarea name="notes" maxLength={2000} className="input-field min-h-24" />
           </label>
-          <button type="submit" className="btn-primary">{t("create")}</button>
+          <Button type="submit">{t("create")}</Button>
         </form>
       </section>
     </main>
   );
 }
 
-function Field({
-  label,
-  name,
-  type = "text",
-  required,
-  minLength,
-  maxLength,
-  autoComplete,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{label}</span>
-      <input className="input-field" name={name} type={type} required={required} minLength={minLength} maxLength={maxLength} autoComplete={autoComplete} />
-    </label>
-  );
-}

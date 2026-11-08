@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
@@ -14,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NODE_ENV: production
       SESSION_SECRET: ci-only-session-secret-please-replace-1234567890
       DATABASE_URL: postgresql://fotografia:fotografia@localhost:5432/fotografia?schema=public
       NEXT_PUBLIC_APP_URL: http://localhost:3000
