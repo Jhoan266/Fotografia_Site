@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
+import { getAccessiblePhoto } from "@/modules/photos/access";
 
 export async function POST(
   request: NextRequest,
@@ -28,18 +29,8 @@ export async function POST(
     return NextResponse.json({ error: "invalid_comment" }, { status: 400 });
   }
 
-  const photo = await prisma.photo.findUnique({
-    where: { id },
-    include: { project: { include: { client: true } } },
-  });
-  if (!photo) return NextResponse.json({ error: "not_found" }, { status: 404 });
-
-  if (
-    session.user.role === "CLIENT" &&
-    (photo.project.client.userId !== session.user.id || photo.project.status !== "DELIVERED")
-  ) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const photo = await getAccessiblePhoto(session.user, id);
+  if (!photo) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const created = await prisma.comment.create({
     data: { userId: session.user.id, photoId: id, body: text },
