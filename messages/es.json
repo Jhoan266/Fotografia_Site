@@ -121,7 +121,18 @@
     "packs": "Packs",
     "packsSoon": "Pago próximamente",
     "orderStub": "Pedido registrado (sin pago en vivo)",
-    "back": "Volver"
+    "back": "Volver",
+    "selectionSummary": "Resumen de selección",
+    "totalPhotos": "Fotos totales",
+    "favoriteCount": "Favoritas",
+    "selectedCount": "Seleccionadas",
+    "galleryFilters": "Filtros de galería",
+    "emptyFilter": "No hay fotos en este filtro.",
+    "selectedBadge": "Seleccionada",
+    "previousPhoto": "Foto anterior",
+    "nextPhoto": "Foto siguiente",
+    "closeViewer": "Cerrar visor",
+    "noComments": "Todavía no hay comentarios."
   },
   "admin": {
     "panel": "Panel fotógrafo",
