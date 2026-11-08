@@ -177,6 +177,11 @@
     "formUnauthorized": "Votre session a expiré. Reconnectez-vous.",
     "formRelation": "Le client ou le pack est indisponible. Actualisez la page.",
     "formNotFound": "Le projet est indisponible.",
-    "formError": "Enregistrement impossible. Réessayez."
+    "formError": "Enregistrement impossible. Réessayez.",
+    "backToProjects": "Retour aux projets",
+    "projectNeedsClient": "Ajoutez un client avant de créer sa première séance.",
+    "uploadSuccess": "{count} photos envoyées.",
+    "uploadError": "Envoi impossible. Vérifiez les fichiers et réessayez.",
+    "uploadPending": "Envoi des photos…"
   }
 }

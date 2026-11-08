@@ -1,3 +1,4 @@
+import { ActionLink, Button, EmptyState, FormField, PageHeading } from "@/components/ui/design-system";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -23,14 +24,15 @@ export default async function NewProjectPage({
     <main>
       <AppHeader locale={locale} user={user} mode="admin" />
       <section className="mx-auto max-w-3xl px-5 py-14 md:px-8">
-        <p className="section-label">{t("projects")}</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold">{t("projects")}</h1>
-        <h2 className="mt-2 text-xl text-white/70">{t("newProject")}</h2>
-        <ActionForm action={createProjectFromForm.bind(null, locale)} className="mt-8 space-y-5">
-          <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("title")}</span>
-            <input className="input-field" name="title" required maxLength={160} />
-          </label>
+        <PageHeading eyebrow={t("projects")} title={t("newProject")}
+          actions={<ActionLink href={`/${locale}/admin/projects`} secondary>{t("backToProjects")}</ActionLink>} />
+        {clients.length === 0 ? <div className="mt-8">
+          <EmptyState title={t("emptyClients")} description={t("projectNeedsClient")}>
+            <ActionLink href={`/${locale}/admin/clients#new-client`}>{t("newClient")}</ActionLink>
+          </EmptyState>
+        </div> :
+        <ActionForm action={createProjectFromForm.bind(null, locale)} className="ds-card mt-8 p-6">
+          <FormField label={t("title")} name="title" required maxLength={160} />
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("description")}</span>
             <textarea className="input-field min-h-28" name="description" maxLength={4000} />
@@ -42,10 +44,7 @@ export default async function NewProjectPage({
               {clients.map((c) => <option key={c.id} value={c.id}>{c.user.name} • {c.user.email}</option>)}
             </select>
           </label>
-          <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("sessionDate")}</span>
-            <input className="input-field" type="date" name="sessionDate" />
-          </label>
+          <FormField label={t("sessionDate")} type="date" name="sessionDate" />
           <fieldset className="space-y-3">
             <legend className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("packs")}</legend>
             {packs.map((pack) => (
@@ -55,8 +54,8 @@ export default async function NewProjectPage({
               </label>
             ))}
           </fieldset>
-          <button type="submit" className="btn-primary">{t("create")}</button>
-        </ActionForm>
+          <Button type="submit">{t("create")}</Button>
+        </ActionForm>}
       </section>
     </main>
   );

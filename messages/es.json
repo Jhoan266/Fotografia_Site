@@ -177,6 +177,11 @@
     "formUnauthorized": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
     "formRelation": "El cliente o pack ya no está disponible. Actualiza la página.",
     "formNotFound": "El proyecto ya no está disponible.",
-    "formError": "No se pudo guardar. Inténtalo de nuevo."
+    "formError": "No se pudo guardar. Inténtalo de nuevo.",
+    "backToProjects": "Volver a proyectos",
+    "projectNeedsClient": "Añade un cliente antes de crear su primera sesión.",
+    "uploadSuccess": "{count} fotos subidas.",
+    "uploadError": "No se pudieron subir las fotos. Revisa los archivos e inténtalo de nuevo.",
+    "uploadPending": "Subiendo fotografías…"
   }
 }

@@ -20,8 +20,8 @@ export function PageHeading({ eyebrow, title, description, actions }: {
 }) {
   return <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
     <div className="min-w-0"><p className="section-label">{eyebrow}</p>
-      <h1 className="mt-3 font-display text-4xl font-semibold md:text-5xl">{title}</h1>
-      {description && <p className="mt-3 max-w-xl text-sm text-white/65">{description}</p>}
+      <h1 className="mt-3 break-words font-display text-4xl font-semibold md:text-5xl">{title}</h1>
+      {description && <p className="mt-3 max-w-xl break-words text-sm text-white/65">{description}</p>}
     </div>
     {actions && <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>}
   </div>;

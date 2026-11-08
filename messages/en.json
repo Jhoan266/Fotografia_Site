@@ -177,6 +177,11 @@
     "formUnauthorized": "Your session has expired. Sign in again.",
     "formRelation": "The client or pack is no longer available. Refresh the page.",
     "formNotFound": "The project is no longer available.",
-    "formError": "Could not save. Please try again."
+    "formError": "Could not save. Please try again.",
+    "backToProjects": "Back to projects",
+    "projectNeedsClient": "Add a client before creating their first session.",
+    "uploadSuccess": "{count} photos uploaded.",
+    "uploadError": "Could not upload the photos. Check the files and try again.",
+    "uploadPending": "Uploading photos…"
   }
 }

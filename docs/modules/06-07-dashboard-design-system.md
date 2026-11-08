@@ -34,3 +34,10 @@ Local validation completed after using an execution context that can start Windo
 Follow-up fixes include typed status counts, photo reorder IDs and an S3 request body with an owned Uint8Array. Shared ActionForm uses useActionState to display translated action results and disable controls during submission. Authorization remains in each server action.
 
 GitHub Actions run 42438693482 failed before executing any job steps, with no runner assigned and no logs available. Authenticated database flows and visual verification remain pending; keep draft until reviewed.
+
+## Project screens follow-up
+- New-project screen reuses headings, fields and buttons and directs users to add a client when no client exists.
+- Project details reuse cards and translated status badges, provide a back action, and format pack prices by locale.
+- Upload control is keyboard accessible, accepts server-supported image types, announces translated results, and resets pending state after HTTP/network failures.
+- Lint explicitly ignores generated Next.js output so checks also work after a build.
+- Local typecheck and production build passed. Lint passed with the existing GalleryClient hook warning. Authenticated runtime and visual checks remain pending.
