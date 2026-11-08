@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const stored = await savePhoto(buffer, file.name);
+      const stored = await savePhoto(buffer);
       const photo = await prisma.photo.create({
         data: {
           projectId,
