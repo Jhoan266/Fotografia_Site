@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
-import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
+import { getAdminDashboardMetrics } from "@/modules/projects/queries";
 
 export default async function AdminHomePage({
   params,
@@ -15,12 +15,7 @@ export default async function AdminHomePage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
-
-  const [clients, projects, photos] = await Promise.all([
-    prisma.clientProfile.count(),
-    prisma.project.count(),
-    prisma.photo.count(),
-  ]);
+  const { clients, projects, photos } = await getAdminDashboardMetrics();
 
   return (
     <main>
@@ -38,15 +33,7 @@ export default async function AdminHomePage({
   );
 }
 
-function Stat({
-  label,
-  value,
-  href,
-}: {
-  label: string;
-  value: number;
-  href: string;
-}) {
+function Stat({ label, value, href }: { label: string; value: number; href: string }) {
   return (
     <Link href={href} className="border border-white/10 p-6 transition hover:border-sand/40">
       <p className="text-xs tracking-[0.2em] text-sand uppercase">{label}</p>
