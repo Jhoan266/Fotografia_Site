@@ -41,3 +41,18 @@ GitHub Actions run 42438693482 failed before executing any job steps, with no ru
 - Upload control is keyboard accessible, accepts server-supported image types, announces translated results, and resets pending state after HTTP/network failures.
 - Lint explicitly ignores generated Next.js output so checks also work after a build.
 - Local typecheck and production build passed. Lint passed with the existing GalleryClient hook warning. Authenticated runtime and visual checks remain pending.
+
+## Docker integration validation
+Docker Compose builds and starts PostgreSQL and the production web application. Both migrations applied, PostgreSQL is healthy, and /es and /es/login return HTTP 200.
+
+Build fixes: Prisma schema is available during dependency installation; .dockerignore excludes local credentials/dependencies/build output; the entrypoint is normalized to LF during the Linux build; runtime file ownership is assigned during COPY.
+
+Run the local integration check from PowerShell:
+
+```powershell
+Get-Content -Raw tests/admin-docker-smoke.mjs | docker compose exec -T -e ALLOW_LOCAL_SMOKE=1 web node --input-type=module
+```
+
+The script creates temporary users/projects and removes them afterward. It requires explicit opt-in and a localhost app URL. Verified actual login/session cookies; ADMIN access and CLIENT/anonymous rejection in ES/EN/FR; persisted project rendering, six-project recent-list limit and localized status labels; JPEG upload, stored thumbnail response, reorder and deletion with zero orphaned objects. Project/client form submission with browser JavaScript and visual/mobile review remain pending: the browser-control runtime fails before startup on drive G: enumeration.
+
+GitHub CI remains blocked at account level by the confirmed billing lock. Local validation does not clear that GitHub check.
