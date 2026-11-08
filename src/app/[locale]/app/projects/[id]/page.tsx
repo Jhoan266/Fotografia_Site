@@ -3,9 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { GalleryClient } from "@/components/client/GalleryClient";
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { createProjectOrder } from "@/modules/orders/actions";
+import { getClientProjectGallery } from "@/modules/projects/gallery-queries";
 
 export default async function ProjectGalleryPage({
   params,
@@ -18,24 +18,7 @@ export default async function ProjectGalleryPage({
   if (!user) redirect(`/${locale}/login`);
 
   const t = await getTranslations("client");
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      client: true,
-      photos: {
-        orderBy: { sortOrder: "asc" },
-        include: {
-          favorites: { where: { userId: user.id } },
-          selections: { where: { userId: user.id } },
-          comments: {
-            include: { user: true },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      },
-      packs: { include: { pack: true } },
-    },
-  });
+  const project = await getClientProjectGallery(id, user.id);
 
   if (!project) notFound();
   if (user.role === "CLIENT" && project.client.userId !== user.id) {
