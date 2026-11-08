@@ -20,16 +20,25 @@ export default async function AdminClientsPage({
 
   return (
     <div>
-      <section className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-[1fr_1.1fr] md:px-8">
+      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:px-8">
         <div>
           <p className="section-label">{t("clients")}</p>
-          <h1 className="mt-3 font-display text-4xl font-semibold">{t("clients")}</h1>
-          <div className="mt-8">{clients.length === 0 && <EmptyState title={t("emptyClients")} description={t("emptyClientsDescription")} />}</div>
+          <h1 className="mt-3 font-display text-4xl font-semibold">
+            {t("clients")}
+          </h1>
+          <div className="mt-8">
+            {clients.length === 0 && (
+              <EmptyState
+                title={t("emptyClients")}
+                description={t("emptyClientsDescription")}
+              />
+            )}
+          </div>
           <ul className="mt-4 space-y-4">
             {clients.map((c) => (
               <li key={c.id} className="border-b border-white/10 pb-4">
-                <p className="text-lg">{c.user.name}</p>
-                <p className="text-sm text-white/55">
+                <p className="break-words text-lg">{c.user.name}</p>
+                <p className="break-words text-sm leading-relaxed text-white/55">
                   {c.user.email}
                   {c.phone ? ` · ${c.phone}` : ""}
                 </p>
@@ -40,10 +49,20 @@ export default async function AdminClientsPage({
             ))}
           </ul>
         </div>
-        <ActionForm id="new-client" action={createClientFromForm.bind(null, locale)} className="ds-card scroll-mt-6 space-y-4 p-6">
+        <ActionForm
+          id="new-client"
+          action={createClientFromForm.bind(null, locale)}
+          className="ds-card scroll-mt-6 space-y-4 p-6"
+        >
           <h2 className="font-display text-2xl">{t("newClient")}</h2>
           <FormField label={t("name")} name="name" required maxLength={120} />
-          <FormField label={t("email")} name="email" type="email" required maxLength={254} />
+          <FormField
+            label={t("email")}
+            name="email"
+            type="email"
+            required
+            maxLength={254}
+          />
           <FormField label={t("phone")} name="phone" maxLength={40} />
           <FormField
             label={t("password")}
@@ -55,8 +74,14 @@ export default async function AdminClientsPage({
             autoComplete="new-password"
           />
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("notes")}</span>
-            <textarea name="notes" maxLength={2000} className="input-field min-h-24" />
+            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
+              {t("notes")}
+            </span>
+            <textarea
+              name="notes"
+              maxLength={2000}
+              className="input-field min-h-24"
+            />
           </label>
           <Button type="submit">{t("create")}</Button>
         </ActionForm>
@@ -64,4 +89,3 @@ export default async function AdminClientsPage({
     </div>
   );
 }
-
