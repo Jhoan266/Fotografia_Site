@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         : `${baseName}-${n++}`;
     }
     usedNames.add(name);
-    archive.append(openStoredFileStream(photo.storageKey), { name });
+    archive.append(await openStoredFileStream(photo.storageKey), { name });
   }
 
   void archive.finalize();
