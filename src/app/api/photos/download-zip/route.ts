@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZipArchive } from "archiver";
-import { PassThrough } from "stream";
+import { Readable } from "stream";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { absoluteStoragePath } from "@/lib/storage";
+import { sanitizeFilename } from "@/lib/security";
 import { createReadStream, existsSync } from "fs";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session.user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!session.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const projectId = request.nextUrl.searchParams.get("projectId");
-  if (!projectId) {
+  const projectId = request.nextUrl.searchParams.get("projectId")?.trim();
+  if (!projectId || projectId.length > 128) {
     return NextResponse.json({ error: "missing_project" }, { status: 400 });
   }
 
@@ -23,9 +22,8 @@ export async function GET(request: NextRequest) {
     where: { id: projectId },
     include: { client: true },
   });
-  if (!project) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
+  if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
   if (
     session.user.role === "CLIENT" &&
     (project.client.userId !== session.user.id || project.status !== "DELIVERED")
@@ -36,19 +34,14 @@ export async function GET(request: NextRequest) {
   let photos = await prisma.photo.findMany({
     where: {
       projectId,
-      selections: {
-        some: { userId: session.user.id, status: "SELECTED" },
-      },
+      selections: { some: { userId: session.user.id, status: "SELECTED" } },
     },
     orderBy: { sortOrder: "asc" },
   });
 
   if (!photos.length) {
     photos = await prisma.photo.findMany({
-      where: {
-        projectId,
-        favorites: { some: { userId: session.user.id } },
-      },
+      where: { projectId, favorites: { some: { userId: session.user.id } } },
       orderBy: { sortOrder: "asc" },
     });
   }
@@ -60,30 +53,34 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const pass = new PassThrough();
-  const archive = new ZipArchive({ zlib: { level: 9 } });
-  archive.on("error", (err: Error) => pass.destroy(err));
-  archive.pipe(pass);
+  const archive = new ZipArchive({ zlib: { level: 6 } });
+  const usedNames = new Set<string>();
 
   for (const photo of photos) {
     const full = absoluteStoragePath(photo.storageKey);
-    if (existsSync(full)) {
-      archive.append(createReadStream(full), { name: photo.filename });
+    if (!existsSync(full)) continue;
+
+    const baseName = sanitizeFilename(photo.filename);
+    let name = baseName;
+    let n = 2;
+    while (usedNames.has(name)) {
+      const dot = baseName.lastIndexOf(".");
+      name = dot > 0
+        ? `${baseName.slice(0, dot)}-${n++}${baseName.slice(dot)}`
+        : `${baseName}-${n++}`;
     }
+    usedNames.add(name);
+    archive.append(createReadStream(full), { name });
   }
+
   void archive.finalize();
 
-  // Collect into a buffer for reliable NextResponse compatibility
-  const chunks: Buffer[] = [];
-  for await (const chunk of pass) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  const zipBuffer = Buffer.concat(chunks);
-
-  return new NextResponse(zipBuffer, {
+  return new NextResponse(Readable.toWeb(archive) as ReadableStream, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="seleccion-${projectId}.zip"`,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
