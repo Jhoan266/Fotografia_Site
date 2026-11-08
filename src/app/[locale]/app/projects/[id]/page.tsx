@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { GalleryClient } from "@/components/client/GalleryClient";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { createProjectOrder } from "@/modules/orders/actions";
 
 export default async function ProjectGalleryPage({
   params,
@@ -88,38 +89,7 @@ export default async function ProjectGalleryPage({
                     className="mt-4"
                     action={async () => {
                       "use server";
-                      const currentUser = await requireUser();
-                      if (!currentUser) return;
-
-                      const currentProject = await prisma.project.findUnique({
-                        where: { id: project.id },
-                        include: {
-                          client: true,
-                          packs: { where: { packId: pack.id }, include: { pack: true } },
-                        },
-                      });
-
-                      const currentPack = currentProject?.packs[0]?.pack;
-                      if (!currentProject || !currentPack || !currentPack.active) return;
-
-                      if (
-                        currentUser.role === "CLIENT" &&
-                        (currentProject.client.userId !== currentUser.id ||
-                          currentProject.status !== "DELIVERED")
-                      ) {
-                        return;
-                      }
-
-                      await prisma.order.create({
-                        data: {
-                          userId: currentUser.id,
-                          projectId: currentProject.id,
-                          packId: currentPack.id,
-                          amountCents: currentPack.priceCents,
-                          currency: currentPack.currency,
-                          status: "UNPAID",
-                        },
-                      });
+                      await createProjectOrder(project.id, pack.id);
                     }}
                   >
                     <button type="submit" className="btn-ghost !py-2 text-xs">

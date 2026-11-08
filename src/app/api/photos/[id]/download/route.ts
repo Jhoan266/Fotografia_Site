@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { readStoredFile } from "@/lib/storage";
 import { contentDispositionAttachment } from "@/lib/security";
+import { getAccessiblePhoto } from "@/modules/photos/access";
 
 export const runtime = "nodejs";
 
@@ -16,20 +16,9 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  const photo = await prisma.photo.findUnique({
-    where: { id },
-    include: { project: { include: { client: true } } },
-  });
+  const photo = await getAccessiblePhoto(session.user, id);
   if (!photo) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
-
-  if (
-    session.user.role === "CLIENT" &&
-    (photo.project.client.userId !== session.user.id ||
-      photo.project.status !== "DELIVERED")
-  ) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   try {

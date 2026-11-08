@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
-import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
+import { listProjectsForAdmin } from "@/modules/projects/queries";
 
 export default async function AdminProjectsPage({
   params,
@@ -15,14 +15,7 @@ export default async function AdminProjectsPage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
-
-  const projects = await prisma.project.findMany({
-    include: {
-      client: { include: { user: true } },
-      _count: { select: { photos: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const projects = await listProjectsForAdmin();
 
   return (
     <main>
@@ -33,9 +26,7 @@ export default async function AdminProjectsPage({
             <p className="section-label">{t("projects")}</p>
             <h1 className="mt-3 font-display text-4xl font-semibold">{t("projects")}</h1>
           </div>
-          <Link href={`/${locale}/admin/projects/new`} className="btn-primary">
-            {t("newProject")}
-          </Link>
+          <Link href={`/${locale}/admin/projects/new`} className="btn-primary">{t("newProject")}</Link>
         </div>
         <ul className="mt-10 space-y-5">
           {projects.map((p) => (
@@ -45,9 +36,7 @@ export default async function AdminProjectsPage({
                   {p.status} · {p._count.photos} {t("photos").toLowerCase()}
                 </p>
                 <h2 className="mt-2 text-xl group-hover:text-sand-soft">{p.title}</h2>
-                <p className="mt-1 text-sm text-white/55">
-                  {p.client.user.name} · {p.client.user.email}
-                </p>
+                <p className="mt-1 text-sm text-white/55">{p.client.user.name} · {p.client.user.email}</p>
               </Link>
             </li>
           ))}
