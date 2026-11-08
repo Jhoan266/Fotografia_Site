@@ -2,7 +2,6 @@ import { ActionForm } from "@/components/admin/ActionForm";
 import { Button, EmptyState, FormField } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
 import { requireRole } from "@/lib/session";
 import { createClientFromForm } from "@/modules/clients/actions";
 import { listClientsForAdmin } from "@/modules/clients/queries";
@@ -20,8 +19,7 @@ export default async function AdminClientsPage({
   const clients = await listClientsForAdmin();
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
+    <div>
       <section className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-[1fr_1.1fr] md:px-8">
         <div>
           <p className="section-label">{t("clients")}</p>
@@ -63,7 +61,7 @@ export default async function AdminClientsPage({
           <Button type="submit">{t("create")}</Button>
         </ActionForm>
       </section>
-    </main>
+    </div>
   );
 }
 

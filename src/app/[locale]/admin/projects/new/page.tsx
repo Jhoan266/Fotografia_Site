@@ -2,7 +2,6 @@ import { ActionLink, Button, EmptyState, FormField, PageHeading } from "@/compon
 import { ActionForm } from "@/components/admin/ActionForm";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
 import { requireRole } from "@/lib/session";
 import { listClientOptions } from "@/modules/clients/queries";
 import { createProjectFromForm } from "@/modules/projects/actions";
@@ -21,8 +20,7 @@ export default async function NewProjectPage({
   const [clients, packs] = await Promise.all([listClientOptions(), listActivePacks()]);
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
+    <div>
       <section className="mx-auto max-w-3xl px-5 py-14 md:px-8">
         <PageHeading eyebrow={t("projects")} title={t("newProject")}
           actions={<ActionLink href={`/${locale}/admin/projects`} secondary>{t("backToProjects")}</ActionLink>} />
@@ -57,6 +55,6 @@ export default async function NewProjectPage({
           <Button type="submit">{t("create")}</Button>
         </ActionForm>}
       </section>
-    </main>
+    </div>
   );
 }
