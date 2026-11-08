@@ -1,36 +1,48 @@
-type Bucket = {
-  count: number;
-  resetAt: number;
+import { prisma } from "@/lib/prisma";
+
+export type RateLimitResult = {
+  ok: boolean;
+  remaining: number;
+  retryAfterMs: number;
 };
 
-const buckets = new Map<string, Bucket>();
-
-export function rateLimit(
+export async function rateLimit(
   key: string,
   limit = 8,
   windowMs = 60_000,
-): { ok: boolean; remaining: number; retryAfterMs: number } {
-  const now = Date.now();
-  const current = buckets.get(key);
+): Promise<RateLimitResult> {
+  const now = new Date();
+  const nextReset = new Date(now.getTime() + windowMs);
 
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true, remaining: limit - 1, retryAfterMs: 0 };
+  const rows = await prisma.$queryRaw<Array<{ count: number; resetAt: Date }>>`
+    INSERT INTO "RateLimitBucket" ("key", "count", "resetAt")
+    VALUES (${key}, 1, ${nextReset})
+    ON CONFLICT ("key") DO UPDATE
+    SET
+      "count" = CASE
+        WHEN "RateLimitBucket"."resetAt" <= ${now} THEN 1
+        ELSE "RateLimitBucket"."count" + 1
+      END,
+      "resetAt" = CASE
+        WHEN "RateLimitBucket"."resetAt" <= ${now} THEN ${nextReset}
+        ELSE "RateLimitBucket"."resetAt"
+      END
+    RETURNING "count", "resetAt"
+  `;
+
+  const bucket = rows[0];
+  if (!bucket) {
+    return { ok: false, remaining: 0, retryAfterMs: windowMs };
   }
 
-  if (current.count >= limit) {
-    return {
-      ok: false,
-      remaining: 0,
-      retryAfterMs: Math.max(0, current.resetAt - now),
-    };
-  }
-
-  current.count += 1;
-  buckets.set(key, current);
+  const ok = bucket.count <= limit;
   return {
-    ok: true,
-    remaining: Math.max(0, limit - current.count),
-    retryAfterMs: 0,
+    ok,
+    remaining: ok ? Math.max(0, limit - bucket.count) : 0,
+    retryAfterMs: ok ? 0 : Math.max(0, bucket.resetAt.getTime() - Date.now()),
   };
+}
+
+export async function clearRateLimit(key: string) {
+  await prisma.rateLimitBucket.deleteMany({ where: { key } });
 }
