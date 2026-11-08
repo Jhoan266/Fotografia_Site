@@ -48,10 +48,6 @@ export async function storedFileExists(key: string) {
   return getStorageProvider().exists(key);
 }
 
-export function absoluteStoragePath(key: string) {
-  const provider = getStorageProvider();
-  if (!provider.resolveLocalPath) {
-    throw new Error("Current storage provider does not expose local filesystem paths.");
-  }
-  return provider.resolveLocalPath(key);
+export function openStoredFileStream(key: string) {
+  return getStorageProvider().openReadStream(key);
 }
