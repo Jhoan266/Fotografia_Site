@@ -1,5 +1,6 @@
 import type { StorageProvider } from "@/modules/storage/types";
 import { LocalStorageProvider } from "@/modules/storage/local";
+import { S3StorageProvider } from "@/modules/storage/s3";
 
 let provider: StorageProvider | null = null;
 
@@ -13,7 +14,10 @@ export function getStorageProvider(): StorageProvider {
     return provider;
   }
 
-  throw new Error(
-    `Storage driver "${driver}" is not configured. Implement and register a provider before enabling it.`,
-  );
+  if (driver === "s3") {
+    provider = new S3StorageProvider();
+    return provider;
+  }
+
+  throw new Error(`Unsupported STORAGE_DRIVER "${driver}".`);
 }
