@@ -1,5 +1,5 @@
 export {
-  absoluteStoragePath,
+  openStoredFileStream,
   readStoredFile,
   savePhoto,
   storedFileExists,
