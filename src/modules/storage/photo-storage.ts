@@ -48,6 +48,6 @@ export async function storedFileExists(key: string) {
   return getStorageProvider().exists(key);
 }
 
-export function openStoredFileStream(key: string) {
+export async function openStoredFileStream(key: string) {
   return getStorageProvider().openReadStream(key);
 }
