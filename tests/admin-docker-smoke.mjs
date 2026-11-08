@@ -73,6 +73,13 @@ async function login(email) {
     assert.equal(detail.r.status,200);assert(detail.html.includes(labels[1]));
   }
   console.log('PASS persisted dashboard data, six-project limit, and localized detail/status rendering');
+  for(const locale of ['es','en','fr']) {
+    const portal=await page(`/${locale}/app`,client);assert.equal(portal.r.status,200);
+    assert(portal.html.includes(`${tag}-project-1`) && portal.html.includes(`${tag}-project-4`),'Delivered client sessions render');
+    assert(!portal.html.includes(`${tag}-project-0`) && !portal.html.includes(`${tag}-project-2`),'Draft and archived sessions stay out of the client portal');
+  }
+  console.log('PASS private client portal delivered-only sessions in ES/EN/FR');
+
   const {r:denied}=await page('/api/photos/'+projects[0].id+'/download',client);
   assert([403,404].includes(denied.status));
   const image=await sharp({create:{width:8,height:8,channels:3,background:'#c5a37d'}}).jpeg().toBuffer();

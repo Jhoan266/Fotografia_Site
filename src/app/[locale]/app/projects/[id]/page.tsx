@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
 import { GalleryClient } from "@/components/client/GalleryClient";
+import { PackRequest } from "@/components/client/PackRequest";
+import { Icon } from "@/components/ui/Icon";
 import { requireUser } from "@/lib/session";
 import { createProjectOrder } from "@/modules/orders/actions";
 import { getClientProjectGallery } from "@/modules/projects/gallery-queries";
@@ -16,18 +18,15 @@ export default async function ProjectGalleryPage({
   setRequestLocale(locale);
   const user = await requireUser();
   if (!user) redirect(`/${locale}/login`);
-
   const t = await getTranslations("client");
+  const p = await getTranslations("client.portal");
   const project = await getClientProjectGallery(id, user.id);
-
   if (!project) notFound();
-  if (user.role === "CLIENT" && project.client.userId !== user.id) {
+  if (
+    user.role === "CLIENT" &&
+    (project.client.userId !== user.id || project.status !== "DELIVERED")
+  )
     redirect(`/${locale}/app`);
-  }
-  if (user.role === "CLIENT" && project.status !== "DELIVERED") {
-    redirect(`/${locale}/app`);
-  }
-
   const photos = project.photos.map((photo) => ({
     id: photo.id,
     filename: photo.filename,
@@ -41,51 +40,94 @@ export default async function ProjectGalleryPage({
       createdAt: c.createdAt.toISOString(),
     })),
   }));
-
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="client" />
-      <section className="mx-auto max-w-6xl px-5 py-12 md:px-8">
-        <Link href={`/${locale}/app`} className="text-sm text-white/50 hover:text-white">
-          ← {t("back")}
-        </Link>
-        <p className="section-label mt-6">{t("galleryLabel")}</p>
-        <h1 className="mt-3 font-display text-3xl font-semibold md:text-5xl">
-          {project.title}
-        </h1>
-        <p className="mt-3 text-white/60">{t("delivered")}</p>
-
-        <GalleryClient locale={locale} projectId={project.id} photos={photos} />
-
-        {project.packs.length > 0 && (
-          <div className="mt-16 border-t border-white/10 pt-10">
-            <h2 className="font-display text-2xl">{t("packs")}</h2>
-            <ul className="mt-6 grid gap-4 md:grid-cols-2">
-              {project.packs.map(({ pack }) => (
-                <li key={pack.id} className="border border-white/10 p-5">
-                  <h3 className="text-lg">{pack.name}</h3>
-                  <p className="mt-2 text-sm text-white/55">{pack.description}</p>
-                  <p className="mt-4 text-sand">
-                    {(pack.priceCents / 100).toFixed(2)} {pack.currency}
-                  </p>
-                  <form
-                    className="mt-4"
-                    action={async () => {
-                      "use server";
-                      await createProjectOrder(project.id, pack.id);
-                    }}
-                  >
-                    <button type="submit" className="btn-ghost !py-2 text-xs">
-                      {t("packsSoon")}
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-xs text-white/40">{t("orderStub")}</p>
-          </div>
+    <div className="portal-gallery-page">
+      <section className="portal-gallery-cover">
+        {photos[0] && (
+          <Image
+            src={photos[0].thumbUrl}
+            alt=""
+            fill
+            sizes="100vw"
+            unoptimized
+            priority
+          />
         )}
+        <div className="portal-gallery-cover-shade" />
+        <div className="portal-gallery-cover-content">
+          <Link href={`/${locale}/app`} className="portal-gallery-back">
+            <Icon name="arrow" width="15" />
+            {p("mySessions")}
+          </Link>
+          <div className="portal-gallery-title">
+            <p className="portal-eyebrow">
+              <Icon name="lock" width="12" />
+              {p("privateGallery")}
+            </p>
+            <h1>{project.title}</h1>
+            <p>
+              {project.sessionDate && (
+                <>
+                  <span>
+                    {new Intl.DateTimeFormat(locale, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      timeZone: "Europe/Madrid",
+                    }).format(project.sessionDate)}
+                  </span>
+                  <span className="portal-meta-dot" />
+                </>
+              )}
+              <span>{t("photos", { count: photos.length })}</span>
+            </p>
+          </div>
+          <span className="portal-cover-stamp">{p("madeForYou")}</span>
+        </div>
       </section>
-    </main>
+      <section className="portal-gallery-content">
+        <div className="portal-gallery-intro">
+          <div>
+            <p className="portal-eyebrow">{p("yourStoryInImages")}</p>
+            <h2>{p("galleryIntro")}</h2>
+          </div>
+          <p>{p("galleryInstructions")}</p>
+        </div>
+        <GalleryClient locale={locale} projectId={project.id} photos={photos} />
+      </section>
+      {project.packs.length > 0 && (
+        <section className="portal-albums">
+          <div className="portal-albums-heading">
+            <div>
+              <p className="portal-eyebrow">{p("beyondTheScreen")}</p>
+              <h2>{p("albumTitle")}</h2>
+            </div>
+            <p>{p("albumIntro")}</p>
+          </div>
+          <ul className="portal-album-grid">
+            {project.packs.map(({ pack }) => (
+              <li key={pack.id}>
+                <span className="portal-album-icon">
+                  <Icon name="projects" width="32" height="32" />
+                </span>
+                <div className="portal-album-details">
+                  <h3>{pack.name}</h3>
+                  <p>{pack.description}</p>
+                  <strong>
+                    {new Intl.NumberFormat(locale, {
+                      style: "currency",
+                      currency: pack.currency,
+                    }).format(pack.priceCents / 100)}
+                  </strong>
+                  <PackRequest
+                    action={createProjectOrder.bind(null, project.id, pack.id)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
