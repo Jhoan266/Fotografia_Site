@@ -199,7 +199,9 @@
       "requestSent": "Demande enregistrée",
       "requestSuccess": "Votre demande est enregistrée. Aucun paiement effectué.",
       "requestError": "Enregistrement impossible. Réessayez.",
-      "noCharge": "Enregistre une demande sans paiement en ligne."
+      "noCharge": "Enregistre une demande sans paiement en ligne.",
+      "home": "Mon tableau de bord",
+      "clientAccount": "Compte client"
     }
   },
   "admin": {

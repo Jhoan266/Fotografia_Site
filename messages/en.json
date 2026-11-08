@@ -199,7 +199,9 @@
       "requestSent": "Request recorded",
       "requestSuccess": "Your request has been recorded. No payment has been made.",
       "requestError": "Could not record your request. Please try again.",
-      "noCharge": "Records a request without an online payment."
+      "noCharge": "Records a request without an online payment.",
+      "home": "My dashboard",
+      "clientAccount": "Client account"
     }
   },
   "admin": {

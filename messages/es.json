@@ -199,7 +199,9 @@
       "requestSent": "Solicitud registrada",
       "requestSuccess": "Tu solicitud ha quedado registrada. No se ha realizado ningún cobro.",
       "requestError": "No se pudo registrar. Inténtalo de nuevo.",
-      "noCharge": "Se registra una solicitud, sin pago online."
+      "noCharge": "Se registra una solicitud, sin pago online.",
+      "home": "Mi panel",
+      "clientAccount": "Cuenta de cliente"
     }
   },
   "admin": {

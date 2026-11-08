@@ -58,6 +58,30 @@ export default async function ClientDashboardPage({
           <p>{t("welcomeNote")}</p>
         </div>
       </div>
+      <section className="portal-overview" aria-label={t("overview")}>
+        {(
+          [
+            { icon: "projects", value: projects.length, label: t("sessions") },
+            { icon: "camera", value: totals.photos, label: t("photos") },
+            { icon: "heart", value: totals.favorites, label: t("favorites") },
+            {
+              icon: "check",
+              value: totals.selected,
+              label: t("albumSelection"),
+            },
+          ] as const
+        ).map((item) => (
+          <div key={item.label}>
+            <span className="portal-overview-icon">
+              <Icon name={item.icon} width="21" />
+            </span>
+            <div>
+              <strong>{number.format(item.value).padStart(2, "0")}</strong>
+              <span>{item.label}</span>
+            </div>
+          </div>
+        ))}
+      </section>
       {featured ? (
         <section className="portal-feature" aria-label={t("featuredSession")}>
           <Link
@@ -151,30 +175,7 @@ export default async function ClientDashboardPage({
           </div>
         </section>
       )}
-      <section className="portal-overview" aria-label={t("overview")}>
-        {(
-          [
-            { icon: "projects", value: projects.length, label: t("sessions") },
-            { icon: "camera", value: totals.photos, label: t("photos") },
-            { icon: "heart", value: totals.favorites, label: t("favorites") },
-            {
-              icon: "check",
-              value: totals.selected,
-              label: t("albumSelection"),
-            },
-          ] as const
-        ).map((item) => (
-          <div key={item.label}>
-            <span className="portal-overview-icon">
-              <Icon name={item.icon} width="21" />
-            </span>
-            <div>
-              <strong>{number.format(item.value).padStart(2, "0")}</strong>
-              <span>{item.label}</span>
-            </div>
-          </div>
-        ))}
-      </section>
+
       <div className="portal-lower-grid">
         <section id="portal-sessions" className="portal-sessions">
           <div className="portal-section-heading">
