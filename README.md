@@ -1,53 +1,52 @@
 # Vera Solís — Fotografía (plataforma)
 
-Sitio público de portafolio + área privada para entregar sesiones a clientes: galerías, favoritos, comentarios, selección de álbum y descarga. La marca y el contenido actuales son placeholders.
+Plataforma de portafolio público + área privada para entregar sesiones a clientes, seleccionar imágenes, comentar y descargar.
 
 ## Stack
 
-- Next.js (App Router) + TypeScript
+- Next.js + TypeScript
 - PostgreSQL + Prisma
 - bcrypt + iron-session
 - Rate limiting persistente en PostgreSQL
-- Storage local en desarrollo; adaptador S3 pendiente
-- i18n ES / EN / FR con next-intl
+- Storage modular: local o S3-compatible
+- i18n ES / EN / FR
 - Docker / Docker Compose
+
+## Storage
+
+La aplicación no depende directamente del filesystem. Usa un contrato `StorageProvider`.
+
+### Local
+
+```env
+STORAGE_DRIVER=local
+STORAGE_LOCAL_PATH=./storage
+```
+
+### S3-compatible
+
+Compatible con servicios que implementen AWS Signature V4, por ejemplo AWS S3, Cloudflare R2 y MinIO.
+
+```env
+STORAGE_DRIVER=s3
+S3_ENDPOINT=https://example-endpoint
+S3_REGION=us-east-1
+S3_BUCKET=fotografia
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+S3_FORCE_PATH_STYLE=true
+```
+
+Para AWS S3 normalmente puede utilizarse virtual-host style configurando `S3_FORCE_PATH_STYLE=false`. Para MinIO/R2 suele ser conveniente path-style según el endpoint utilizado.
 
 ## Desarrollo local
 
-1. Copia el archivo de entorno y sustituye **todos** los valores `replace_me`.
-2. Usa un `SESSION_SECRET` aleatorio de al menos 32 caracteres.
-3. No reutilices credenciales de desarrollo en producción.
-
 ```bash
-git clone https://github.com/Jhoan266/Fotografia_Site.git
-cd Fotografia_Site
 cp .env.example .env
 npm install
 docker compose up -d postgres
 npx prisma migrate deploy
 npm run dev:host
-```
-
-La aplicación estará disponible en `http://localhost:3000/es`.
-
-## Datos demo
-
-El seed es únicamente para desarrollo y **se niega a ejecutarse con NODE_ENV=production**.
-
-Para cargar datos demo manualmente:
-
-```bash
-DEMO_PASSWORD='elige-una-clave-local-segura' npm run db:seed
-```
-
-No existen credenciales demo destinadas a producción y el contenedor web no ejecuta el seed automáticamente.
-
-## Docker
-
-El stack exige `POSTGRES_PASSWORD` y `SESSION_SECRET` explícitos. PostgreSQL no publica su puerto al host en el compose de aplicación.
-
-```bash
-docker compose up --build
 ```
 
 ## Verificación
@@ -58,22 +57,16 @@ npm run typecheck
 npm run build
 ```
 
-## Rutas
-
-- Marketing: `/es`, `/en`, `/fr`
-- Login: `/es/login`
-- Cliente: `/es/app`
-- Admin: `/es/admin`
-
 ## Seguridad
 
-- Sesiones httpOnly y secure en producción.
-- Secretos obligatorios; sin fallback de producción.
-- Roles ADMIN / CLIENT verificados en servidor.
-- Protección de mutaciones API por origen.
-- Límites y validación de subidas.
-- Validación de rutas de almacenamiento.
-- Descargas privadas con headers endurecidos.
-- Rate limiting de login persistente.
+- Secretos de sesión obligatorios.
+- Sesiones httpOnly.
+- Roles verificados en servidor.
+- Rate limiting persistente de login.
+- Mutaciones API con verificación de origen.
+- Validación de subidas y rutas.
+- Storage encapsulado por provider.
+- Seed demo bloqueado en producción.
+- PostgreSQL no expuesto por defecto.
 
-Antes de un despliegue real deben completarse pruebas automatizadas, almacenamiento de objetos S3 compatible, observabilidad, backups y revisión de dependencias.
+Antes de producción deben completarse pruebas automatizadas, observabilidad, backups y políticas de retención.
