@@ -1,4 +1,5 @@
 import { access, mkdir, readFile, writeFile } from "fs/promises";
+import { createReadStream } from "fs";
 import path from "path";
 import type { StorageProvider } from "@/modules/storage/types";
 
@@ -42,7 +43,7 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  resolveLocalPath(key: string) {
-    return resolveStorageKey(key);
+  openReadStream(key: string) {
+    return createReadStream(resolveStorageKey(key));
   }
 }
