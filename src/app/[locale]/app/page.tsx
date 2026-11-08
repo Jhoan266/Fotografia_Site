@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { listDeliveredProjectsForClient } from "@/modules/projects/queries";
 
 export default async function ClientDashboardPage({
   params,
@@ -17,18 +17,7 @@ export default async function ClientDashboardPage({
   if (user.role === "ADMIN") redirect(`/${locale}/admin`);
 
   const t = await getTranslations("client");
-  const profile = await prisma.clientProfile.findUnique({
-    where: { userId: user.id },
-    include: {
-      projects: {
-        where: { status: { in: ["DELIVERED", "DRAFT"] } },
-        include: { _count: { select: { photos: true } } },
-        orderBy: { sessionDate: "desc" },
-      },
-    },
-  });
-
-  const projects = (profile?.projects || []).filter((p) => p.status === "DELIVERED");
+  const projects = await listDeliveredProjectsForClient(user.id);
 
   return (
     <main>
@@ -39,7 +28,6 @@ export default async function ClientDashboardPage({
           {t("hello", { name: user.name.split(" ")[0] })}
         </h1>
         <div className="mt-8 h-px bg-white/10" />
-
         {projects.length === 0 ? (
           <p className="mt-10 text-white/55">{t("empty")}</p>
         ) : (
@@ -49,13 +37,9 @@ export default async function ClientDashboardPage({
                 <Link href={`/${locale}/app/projects/${project.id}`} className="group block">
                   <p className="text-xs tracking-[0.2em] text-sand uppercase">
                     {t("photos", { count: project._count.photos })}
-                    {project.sessionDate
-                      ? ` · ${project.sessionDate.toLocaleDateString(locale)}`
-                      : ""}
+                    {project.sessionDate ? ` · ${project.sessionDate.toLocaleDateString(locale)}` : ""}
                   </p>
-                  <h2 className="mt-2 font-display text-2xl transition group-hover:text-sand-soft">
-                    {project.title}
-                  </h2>
+                  <h2 className="mt-2 font-display text-2xl transition group-hover:text-sand-soft">{project.title}</h2>
                   <p className="mt-2 text-sm text-white/60">{t("delivered")}</p>
                 </Link>
               </li>
