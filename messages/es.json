@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "title": "Vera Solís — Fotografía",
+    "description": "Fotografía de bodas, sesiones y book profesional en Barcelona."
+  },
+  "nav": {
+    "services": "Servicios",
+    "portfolio": "Portafolio",
+    "about": "Sobre mí",
+    "process": "Proceso",
+    "contact": "Contacto",
+    "clientArea": "Área cliente",
+    "whatsapp": "WhatsApp",
+    "sessions": "Mis sesiones",
+    "logout": "Salir",
+    "admin": "Admin",
+    "clients": "Clientes",
+    "projects": "Proyectos",
+    "panel": "Panel fotógrafo"
+  },
+  "hero": {
+    "location": "Barcelona · España",
+    "brand": "Vera Solís",
+    "specialty": "Fotografía",
+    "tagline": "Imágenes con calma, carácter y verdad.",
+    "subtitle": "Fotografía de bodas, sesiones y book profesional. Edición personal y entrega cuidada.",
+    "ctaWhatsapp": "Escribir por WhatsApp",
+    "ctaPortfolio": "Ver portafolio"
+  },
+  "services": {
+    "label": "Servicios",
+    "title": "Tres formas de trabajar juntas",
+    "items": {
+      "weddings": {
+        "title": "Matrimonios",
+        "body": "Cobertura íntima o completa: la emoción real, sin poses forzadas."
+      },
+      "sessions": {
+        "title": "Sesiones",
+        "body": "Pareja, familia o retrato personal. Luz natural y dirección suave."
+      },
+      "book": {
+        "title": "Book profesional",
+        "body": "Book lifestyle y profesional con tono discreto, elegante y actual."
+      }
+    }
+  },
+  "portfolio": {
+    "label": "Portafolio",
+    "title": "Selección reciente",
+    "all": "Todas",
+    "weddings": "Bodas",
+    "sessions": "Sesiones",
+    "book": "Book"
+  },
+  "about": {
+    "label": "Sobre mí",
+    "title": "Observar sin interrumpir",
+    "body": "Trabajo desde Barcelona con un enfoque editorial y cercano. Menos ruido, más presencia. Cada entrega se organiza en una galería privada para que elijas con calma."
+  },
+  "process": {
+    "label": "Proceso",
+    "title": "De la reserva a la entrega",
+    "steps": {
+      "1": { "title": "Conversación", "body": "Hablamos del tono, el lugar y lo que importa." },
+      "2": { "title": "Sesión", "body": "Dirección suave, ritmo natural, luz cuidada." },
+      "3": { "title": "Edición", "body": "Selección y revelado personal, sin filtros genéricos." },
+      "4": { "title": "Galería privada", "body": "Accedes online: favoritos, comentarios y descarga." }
+    }
+  },
+  "contact": {
+    "label": "Contacto",
+    "title": "Reserve su sesión",
+    "body": "Cuéntame la fecha y el tipo de sesión. Respondo por WhatsApp o email.",
+    "cta": "Abrir WhatsApp"
+  },
+  "footer": {
+    "rights": "Todos los derechos reservados.",
+    "placeholder": "Contenido placeholder — sustituir con datos reales."
+  },
+  "login": {
+    "title": "Acceso privado",
+    "subtitle": "Entra para ver tus sesiones entregadas.",
+    "email": "Email",
+    "password": "Contraseña",
+    "submit": "Entrar",
+    "errorInvalid": "Email o contraseña incorrectos.",
+    "errorMissing": "Introduce email y contraseña.",
+    "errorRate": "Demasiados intentos. Espera un minuto."
+  },
+  "client": {
+    "label": "Tus sesiones",
+    "hello": "Hola, {name}",
+    "empty": "Aún no hay sesiones entregadas.",
+    "delivered": "Sesión entregada. Selecciona favoritas para el álbum.",
+    "draft": "En preparación",
+    "photos": "{count} fotos",
+    "galleryLabel": "Galería privada",
+    "filterAll": "Todas",
+    "filterFavorites": "Favoritas",
+    "filterAlbum": "Selección álbum",
+    "downloadSelection": "Descargar selección",
+    "downloadOne": "Descargar",
+    "favorite": "Favorito",
+    "selectAlbum": "Álbum",
+    "comments": "Comentarios",
+    "commentPlaceholder": "Escribe un comentario…",
+    "send": "Enviar",
+    "packs": "Packs",
+    "packsSoon": "Pago próximamente",
+    "orderStub": "Pedido registrado (sin pago en vivo)",
+    "back": "Volver"
+  },
+  "admin": {
+    "panel": "Panel fotógrafo",
+    "clients": "Clientes",
+    "projects": "Proyectos",
+    "newClient": "Nuevo cliente",
+    "newProject": "Nuevo proyecto",
+    "name": "Nombre",
+    "email": "Email",
+    "phone": "Teléfono",
+    "notes": "Notas",
+    "password": "Contraseña temporal",
+    "create": "Crear",
+    "title": "Título",
+    "description": "Descripción",
+    "client": "Cliente",
+    "sessionDate": "Fecha sesión",
+    "packs": "Packs",
+    "upload": "Subir fotos",
+    "publish": "Publicar / entregar",
+    "status": "Estado",
+    "draft": "Borrador",
+    "delivered": "Entregado",
+    "archived": "Archivado",
+    "photos": "Fotos",
+    "save": "Guardar"
+  }
+}

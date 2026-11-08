@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum ProjectStatus {
+  DRAFT
+  DELIVERED
+  ARCHIVED
+}
+
+enum SelectionStatus {
+  SELECTED
+  REJECTED
+}
+
+enum OrderStatus {
+  UNPAID
+  PAID
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         Role
+  locale       String         @default("es")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  clientProfile ClientProfile?
+  favorites    Favorite[]
+  comments     Comment[]
+  selections   Selection[]
+  orders       Order[]
+}
+
+model ClientProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  notes     String?
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  sessionDate DateTime?
+  status      ProjectStatus @default(DRAFT)
+  clientId    String
+  client      ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  photos      Photo[]
+  packs       ProjectPack[]
+  orders      Order[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Photo {
+  id         String      @id @default(cuid())
+  projectId  String
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  storageKey String
+  thumbKey   String?
+  filename   String
+  width      Int?
+  height     Int?
+  sortOrder  Int         @default(0)
+  favorites  Favorite[]
+  comments   Comment[]
+  selections Selection[]
+  createdAt  DateTime    @default(now())
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  photoId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, photoId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  photoId   String
+  body      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Selection {
+  id        String          @id @default(cuid())
+  userId    String
+  photoId   String
+  status    SelectionStatus @default(SELECTED)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo     Photo           @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@unique([userId, photoId])
+}
+
+model Pack {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  priceCents  Int
+  currency    String        @default("EUR")
+  active      Boolean       @default(true)
+  projects    ProjectPack[]
+  orders      Order[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ProjectPack {
+  projectId String
+  packId    String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pack      Pack    @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, packId])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  projectId   String
+  packId      String
+  status      OrderStatus @default(UNPAID)
+  amountCents Int
+  currency    String      @default("EUR")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pack        Pack        @relation(fields: [packId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}

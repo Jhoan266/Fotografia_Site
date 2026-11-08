@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "title": "Vera Solís — Photographie",
+    "description": "Photographie de mariage, séances et book professionnel à Barcelone."
+  },
+  "nav": {
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "about": "À propos",
+    "process": "Processus",
+    "contact": "Contact",
+    "clientArea": "Espace client",
+    "whatsapp": "WhatsApp",
+    "sessions": "Mes séances",
+    "logout": "Quitter",
+    "admin": "Admin",
+    "clients": "Clients",
+    "projects": "Projets",
+    "panel": "Espace photographe"
+  },
+  "hero": {
+    "location": "Barcelone · Espagne",
+    "brand": "Vera Solís",
+    "specialty": "Photographie",
+    "tagline": "Des images calmes, avec caractère et vérité.",
+    "subtitle": "Photographie de mariage, séances et book professionnel. Retouche personnelle et livraison soignée.",
+    "ctaWhatsapp": "Écrire sur WhatsApp",
+    "ctaPortfolio": "Voir le portfolio"
+  },
+  "services": {
+    "label": "Services",
+    "title": "Trois façons de travailler ensemble",
+    "items": {
+      "weddings": {
+        "title": "Mariages",
+        "body": "Couverture intimiste ou complète — l’émotion réelle, sans poses forcées."
+      },
+      "sessions": {
+        "title": "Séances",
+        "body": "Couple, famille ou portrait. Direction douce, lumière naturelle."
+      },
+      "book": {
+        "title": "Book professionnel",
+        "body": "Books lifestyle et professionnels, ton discret, élégant et actuel."
+      }
+    }
+  },
+  "portfolio": {
+    "label": "Portfolio",
+    "title": "Sélection récente",
+    "all": "Toutes",
+    "weddings": "Mariages",
+    "sessions": "Séances",
+    "book": "Book"
+  },
+  "about": {
+    "label": "À propos",
+    "title": "Observer sans interrompre",
+    "body": "Basée à Barcelone, approche éditoriale et proche. Moins de bruit, plus de présence. Chaque livraison vit dans une galerie privée pour choisir tranquillement."
+  },
+  "process": {
+    "label": "Processus",
+    "title": "De la réservation à la livraison",
+    "steps": {
+      "1": { "title": "Conversation", "body": "On parle du ton, du lieu et de ce qui compte." },
+      "2": { "title": "Séance", "body": "Direction douce, rythme naturel, lumière soignée." },
+      "3": { "title": "Retouche", "body": "Sélection et développement personnels — pas de filtres génériques." },
+      "4": { "title": "Galerie privée", "body": "Accès en ligne : favoris, commentaires et téléchargement." }
+    }
+  },
+  "contact": {
+    "label": "Contact",
+    "title": "Réservez votre séance",
+    "body": "Indiquez la date et le type de séance. Je réponds sur WhatsApp ou par email.",
+    "cta": "Ouvrir WhatsApp"
+  },
+  "footer": {
+    "rights": "Tous droits réservés.",
+    "placeholder": "Contenu placeholder — à remplacer par les vraies infos."
+  },
+  "login": {
+    "title": "Accès privé",
+    "subtitle": "Connectez-vous pour voir vos séances livrées.",
+    "email": "Email",
+    "password": "Mot de passe",
+    "submit": "Entrer",
+    "errorInvalid": "Email ou mot de passe incorrect.",
+    "errorMissing": "Entrez email et mot de passe.",
+    "errorRate": "Trop de tentatives. Attendez une minute."
+  },
+  "client": {
+    "label": "Vos séances",
+    "hello": "Bonjour, {name}",
+    "empty": "Pas encore de séances livrées.",
+    "delivered": "Séance livrée. Sélectionnez vos favoris pour l’album.",
+    "draft": "En préparation",
+    "photos": "{count} photos",
+    "galleryLabel": "Galerie privée",
+    "filterAll": "Toutes",
+    "filterFavorites": "Favoris",
+    "filterAlbum": "Sélection album",
+    "downloadSelection": "Télécharger la sélection",
+    "downloadOne": "Télécharger",
+    "favorite": "Favori",
+    "selectAlbum": "Album",
+    "comments": "Commentaires",
+    "commentPlaceholder": "Écrire un commentaire…",
+    "send": "Envoyer",
+    "packs": "Packs",
+    "packsSoon": "Paiement bientôt",
+    "orderStub": "Commande enregistrée (pas de paiement en direct)",
+    "back": "Retour"
+  },
+  "admin": {
+    "panel": "Espace photographe",
+    "clients": "Clients",
+    "projects": "Projets",
+    "newClient": "Nouveau client",
+    "newProject": "Nouveau projet",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "notes": "Notes",
+    "password": "Mot de passe temporaire",
+    "create": "Créer",
+    "title": "Titre",
+    "description": "Description",
+    "client": "Client",
+    "sessionDate": "Date de séance",
+    "packs": "Packs",
+    "upload": "Téléverser des photos",
+    "publish": "Publier / livrer",
+    "status": "Statut",
+    "draft": "Brouillon",
+    "delivered": "Livré",
+    "archived": "Archivé",
+    "photos": "Photos",
+    "save": "Enregistrer"
+  }
+}

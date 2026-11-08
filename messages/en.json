@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "title": "Vera Solís — Photography",
+    "description": "Wedding, session and professional book photography in Barcelona."
+  },
+  "nav": {
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "about": "About",
+    "process": "Process",
+    "contact": "Contact",
+    "clientArea": "Client area",
+    "whatsapp": "WhatsApp",
+    "sessions": "My sessions",
+    "logout": "Log out",
+    "admin": "Admin",
+    "clients": "Clients",
+    "projects": "Projects",
+    "panel": "Photographer panel"
+  },
+  "hero": {
+    "location": "Barcelona · Spain",
+    "brand": "Vera Solís",
+    "specialty": "Photography",
+    "tagline": "Images with calm, character and truth.",
+    "subtitle": "Wedding photography, sessions and professional books. Personal editing and careful delivery.",
+    "ctaWhatsapp": "Message on WhatsApp",
+    "ctaPortfolio": "View portfolio"
+  },
+  "services": {
+    "label": "Services",
+    "title": "Three ways to work together",
+    "items": {
+      "weddings": {
+        "title": "Weddings",
+        "body": "Intimate or full coverage — real emotion, no forced poses."
+      },
+      "sessions": {
+        "title": "Sessions",
+        "body": "Couple, family or personal portrait. Soft direction, natural light."
+      },
+      "book": {
+        "title": "Professional book",
+        "body": "Lifestyle and professional books with a discreet, elegant tone."
+      }
+    }
+  },
+  "portfolio": {
+    "label": "Portfolio",
+    "title": "Recent selection",
+    "all": "All",
+    "weddings": "Weddings",
+    "sessions": "Sessions",
+    "book": "Book"
+  },
+  "about": {
+    "label": "About",
+    "title": "Observe without interrupting",
+    "body": "Based in Barcelona with an editorial, close approach. Less noise, more presence. Every delivery lives in a private gallery so you can choose calmly."
+  },
+  "process": {
+    "label": "Process",
+    "title": "From booking to delivery",
+    "steps": {
+      "1": { "title": "Conversation", "body": "We talk about tone, place and what matters." },
+      "2": { "title": "Session", "body": "Soft direction, natural rhythm, careful light." },
+      "3": { "title": "Editing", "body": "Personal selection and grading — no generic filters." },
+      "4": { "title": "Private gallery", "body": "You access online: favorites, comments and download." }
+    }
+  },
+  "contact": {
+    "label": "Contact",
+    "title": "Book your session",
+    "body": "Tell me the date and type of session. I reply on WhatsApp or email.",
+    "cta": "Open WhatsApp"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "placeholder": "Placeholder content — replace with real details."
+  },
+  "login": {
+    "title": "Private access",
+    "subtitle": "Sign in to see your delivered sessions.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "errorInvalid": "Incorrect email or password.",
+    "errorMissing": "Enter email and password.",
+    "errorRate": "Too many attempts. Wait a minute."
+  },
+  "client": {
+    "label": "Your sessions",
+    "hello": "Hello, {name}",
+    "empty": "No delivered sessions yet.",
+    "delivered": "Session delivered. Select favorites for the album.",
+    "draft": "In progress",
+    "photos": "{count} photos",
+    "galleryLabel": "Private gallery",
+    "filterAll": "All",
+    "filterFavorites": "Favorites",
+    "filterAlbum": "Album selection",
+    "downloadSelection": "Download selection",
+    "downloadOne": "Download",
+    "favorite": "Favorite",
+    "selectAlbum": "Album",
+    "comments": "Comments",
+    "commentPlaceholder": "Write a comment…",
+    "send": "Send",
+    "packs": "Packs",
+    "packsSoon": "Payment coming soon",
+    "orderStub": "Order recorded (no live payment)",
+    "back": "Back"
+  },
+  "admin": {
+    "panel": "Photographer panel",
+    "clients": "Clients",
+    "projects": "Projects",
+    "newClient": "New client",
+    "newProject": "New project",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "notes": "Notes",
+    "password": "Temporary password",
+    "create": "Create",
+    "title": "Title",
+    "description": "Description",
+    "client": "Client",
+    "sessionDate": "Session date",
+    "packs": "Packs",
+    "upload": "Upload photos",
+    "publish": "Publish / deliver",
+    "status": "Status",
+    "draft": "Draft",
+    "delivered": "Delivered",
+    "archived": "Archived",
+    "photos": "Photos",
+    "save": "Save"
+  }
+}
