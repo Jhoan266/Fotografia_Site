@@ -116,7 +116,9 @@ export default async function ClientLayout({
             </details>
           </div>
         </header>
-        <main id="portal-content">{children}</main>
+        <main id="portal-content" tabIndex={-1}>
+          {children}
+        </main>
         <footer className="portal-footer">
           <Link href={`/${locale}`} className="portal-footer-brand">
             Vera Solís.

@@ -177,7 +177,7 @@ export default async function ClientDashboardPage({
       )}
 
       <div className="portal-lower-grid">
-        <section id="portal-sessions" className="portal-sessions">
+        <section id="portal-sessions" tabIndex={-1} className="portal-sessions">
           <div className="portal-section-heading">
             <div>
               <p className="portal-eyebrow">{t("yourStories")}</p>
@@ -282,7 +282,7 @@ export default async function ClientDashboardPage({
             <p className="portal-session-empty">{t("noSessions")}</p>
           )}
         </section>
-        <aside className="portal-guide" id="portal-guide">
+        <aside className="portal-guide" id="portal-guide" tabIndex={-1}>
           <span className="portal-guide-mark">
             <Icon name="heart" width="22" />
           </span>
