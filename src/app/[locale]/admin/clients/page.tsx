@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/admin/ActionForm";
 import { Button, EmptyState, FormField } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -41,7 +42,7 @@ export default async function AdminClientsPage({
             ))}
           </ul>
         </div>
-        <form id="new-client" action={createClientFromForm.bind(null, locale)} className="ds-card scroll-mt-6 space-y-4 p-6">
+        <ActionForm id="new-client" action={createClientFromForm.bind(null, locale)} className="ds-card scroll-mt-6 space-y-4 p-6">
           <h2 className="font-display text-2xl">{t("newClient")}</h2>
           <FormField label={t("name")} name="name" required maxLength={120} />
           <FormField label={t("email")} name="email" type="email" required maxLength={254} />
@@ -60,7 +61,7 @@ export default async function AdminClientsPage({
             <textarea name="notes" maxLength={2000} className="input-field min-h-24" />
           </label>
           <Button type="submit">{t("create")}</Button>
-        </form>
+        </ActionForm>
       </section>
     </main>
   );

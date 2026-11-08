@@ -22,4 +22,15 @@ Verify as ADMIN in ES/EN/FR at 375px and desktop widths:
 5. CLIENT and signed-out visitors cannot access the dashboard.
 6. Existing client creation, project creation, upload, reorder and delivery still work.
 
-Local execution was unavailable during authoring because the Windows execution host failed before process startup (volume G: enumeration error). Runtime, typecheck and visual verification must be confirmed by CI and preview; this PR remains draft.
+## Follow-up validation
+Local validation completed after using an execution context that can start Windows processes:
+- npm ci: passed; Prisma client generated.
+- npm run typecheck: passed.
+- npm run lint: zero errors; one existing exhaustive-deps warning in GalleryClient.
+- npm run build: passed, including generation of 26 pages.
+- Production HTTP smoke check: dashboard, clients and new-project routes redirect unauthenticated visitors to the correct login in ES/EN/FR (nine routes).
+- git diff --check: passed.
+
+Follow-up fixes include typed status counts, photo reorder IDs and an S3 request body with an owned Uint8Array. Shared ActionForm uses useActionState to display translated action results and disable controls during submission. Authorization remains in each server action.
+
+GitHub Actions run 42438693482 failed before executing any job steps, with no runner assigned and no logs available. Authenticated database flows and visual verification remain pending; keep draft until reviewed.

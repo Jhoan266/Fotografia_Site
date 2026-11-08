@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const projectId = typeof body?.projectId === "string" ? body.projectId.trim() : "";
-  const photoIds = Array.isArray(body?.photoIds) ? body.photoIds.filter((id: unknown): id is string => typeof id === "string") : [];
+  const photoIds: string[] = Array.isArray(body?.photoIds) ? body.photoIds.filter((id: unknown): id is string => typeof id === "string") : [];
 
   if (!projectId || projectId.length > 128 || photoIds.length > 1000) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });

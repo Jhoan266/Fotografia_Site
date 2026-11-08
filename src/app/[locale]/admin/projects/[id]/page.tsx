@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/admin/ActionForm";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -30,9 +31,9 @@ export default async function AdminProjectDetailPage({
         <p className="mt-2 text-xs tracking-[0.18em] text-sand uppercase">{t("status")}: {project.status}</p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <form action={publishProject.bind(null, locale, id)}>
+          <ActionForm action={publishProject.bind(null, locale, id)}>
             <button type="submit" className="btn-primary">{t("publish")}</button>
-          </form>
+          </ActionForm>
         </div>
 
         <div className="mt-10">

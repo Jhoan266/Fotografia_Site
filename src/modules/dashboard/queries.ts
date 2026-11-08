@@ -5,11 +5,13 @@ export async function getAdminDashboard() {
   const user = await requireRole("ADMIN");
   if (!user) throw new Error("Unauthorized");
 
-  const [clients, projects, photos, statuses, recentProjects] = await prisma.$transaction([
+  const [clients, projects, photos, drafts, delivered, archived, recentProjects] = await prisma.$transaction([
     prisma.clientProfile.count(),
     prisma.project.count(),
     prisma.photo.count(),
-    prisma.project.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.project.count({ where: { status: "DRAFT" } }),
+    prisma.project.count({ where: { status: "DELIVERED" } }),
+    prisma.project.count({ where: { status: "ARCHIVED" } }),
     prisma.project.findMany({
       take: 6,
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -20,8 +22,5 @@ export async function getAdminDashboard() {
       },
     }),
   ]);
-  const count = (status: "DRAFT" | "DELIVERED" | "ARCHIVED") =>
-    statuses.find((item) => item.status === status)?._count._all ?? 0;
-  return { clients, projects, photos, drafts: count("DRAFT"),
-    delivered: count("DELIVERED"), archived: count("ARCHIVED"), recentProjects };
+  return { clients, projects, photos, drafts, delivered, archived, recentProjects };
 }

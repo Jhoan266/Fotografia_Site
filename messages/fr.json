@@ -169,6 +169,14 @@
     "deliveryOverview": "État des livraisons",
     "deliveryDescription": "Un aperçu de tous vos projets.",
     "emptyClients": "Aucun client pour le moment",
-    "emptyClientsDescription": "Ajoutez un client pour organiser ses séances."
+    "emptyClientsDescription": "Ajoutez un client pour organiser ses séances.",
+    "formPending": "Enregistrement…",
+    "formSuccess": "Modifications enregistrées.",
+    "formInvalid": "Vérifiez les champs du formulaire.",
+    "formEmailInUse": "Cet email possède déjà un compte.",
+    "formUnauthorized": "Votre session a expiré. Reconnectez-vous.",
+    "formRelation": "Le client ou le pack est indisponible. Actualisez la page.",
+    "formNotFound": "Le projet est indisponible.",
+    "formError": "Enregistrement impossible. Réessayez."
   }
 }
