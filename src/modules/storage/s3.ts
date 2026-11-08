@@ -58,7 +58,7 @@ function amzDate(date: Date) {
 }
 
 async function signedFetch(
-  method: "GET" | "PUT" | "HEAD",
+  method: "GET" | "PUT" | "HEAD" | "DELETE",
   key: string,
   body?: Buffer,
 ) {
@@ -136,6 +136,13 @@ export class S3StorageProvider implements StorageProvider {
       throw new Error(`S3 HEAD failed with ${response.status}.`);
     }
     return true;
+  }
+
+  async delete(key: string) {
+    const response = await signedFetch("DELETE", key);
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`S3 DELETE failed with ${response.status}.`);
+    }
   }
 
   async openReadStream(key: string) {
