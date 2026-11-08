@@ -143,6 +143,6 @@ export class S3StorageProvider implements StorageProvider {
     if (!response.ok || !response.body) {
       throw new Error(`S3 stream failed with ${response.status}.`);
     }
-    return Readable.fromWeb(response.body as import("stream/web").ReadableStream);
+    return Readable.fromWeb(response.body as never);
   }
 }
