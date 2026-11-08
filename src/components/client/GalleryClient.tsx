@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 export type GalleryPhoto = {
@@ -25,12 +24,18 @@ export function GalleryClient({
   photos: GalleryPhoto[];
 }) {
   const t = useTranslations("client");
-  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [photos, setPhotos] = useState(initial);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mutationLocks = useRef(new Set<string>());
+  const commentLock = useRef(false);
+  const draftVersion = useRef(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const viewerTrigger = useRef<string | null>(null);
+  const viewerOpen = Boolean(activeId);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRefs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -45,34 +50,54 @@ export function GalleryClient({
   const activeIndex = activeId ? photos.findIndex((photo) => photo.id === activeId) : -1;
   const active = activeIndex >= 0 ? photos[activeIndex] : null;
 
-  function closeViewer() {
-    const previousId = activeId;
+  const closeViewer = useCallback(() => {
+    draftVersion.current++;
+    const previousId = viewerTrigger.current;
     setActiveId(null);
     setComment("");
     if (previousId) {
       requestAnimationFrame(() => triggerRefs.current.get(previousId)?.focus());
     }
-  }
+  }, []);
 
-  function navigateViewer(direction: -1 | 1) {
+  const navigateViewer = useCallback((direction: -1 | 1) => {
+    draftVersion.current++;
     if (activeIndex < 0 || photos.length < 2) return;
     const nextIndex = (activeIndex + direction + photos.length) % photos.length;
     setActiveId(photos[nextIndex].id);
     setComment("");
-  }
+  }, [activeIndex, photos]);
 
   useEffect(() => {
-    if (!activeId) return;
-
+    if (!viewerOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [viewerOpen]);
+
+  useEffect(() => {
+    if (!viewerOpen) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         closeViewer();
       }
+      if (event.key === "Tab") {
+        const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]',
+        ) ?? []).filter((element) => element.getClientRects().length > 0);
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); first?.focus();
+        }
+      }
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select"))) return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         navigateViewer(-1);
@@ -85,80 +110,59 @@ export function GalleryClient({
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [activeId, activeIndex, photos]);
+  }, [viewerOpen, closeViewer, navigateViewer]);
 
-  async function toggleFavorite(photoId: string) {
-    const previous = photos;
-    setPhotos((current) =>
-      current.map((photo) =>
-        photo.id === photoId ? { ...photo, favorite: !photo.favorite } : photo,
-      ),
-    );
-
-    const response = await fetch(`/api/photos/${photoId}/favorite`, { method: "POST" });
-    if (!response.ok) {
-      setPhotos(previous);
-      return;
+  async function togglePhoto(photoId: string, field: "favorite" | "selected") {
+    const key = `${photoId}:${field}`;
+    if (mutationLocks.current.has(key)) return;
+    const previous = photos.find((photo) => photo.id === photoId)?.[field];
+    if (previous === undefined) return;
+    mutationLocks.current.add(key);
+    setError(null);
+    setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: !previous } : photo));
+    try {
+      const response = await fetch(`/api/photos/${photoId}/${field === "favorite" ? "favorite" : "select"}`, { method: "POST" });
+      if (!response.ok) throw new Error("Photo update failed");
+      const data = await response.json();
+      if (typeof data[field] !== "boolean") throw new Error("Invalid photo response");
+      setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: data[field] } : photo));
+    } catch {
+      setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, [field]: previous } : photo));
+      setError(t("saveError"));
+    } finally {
+      mutationLocks.current.delete(key);
     }
-
-    const data = await response.json();
-    setPhotos((current) =>
-      current.map((photo) =>
-        photo.id === photoId ? { ...photo, favorite: Boolean(data.favorite) } : photo,
-      ),
-    );
-  }
-
-  async function toggleSelect(photoId: string) {
-    const previous = photos;
-    setPhotos((current) =>
-      current.map((photo) =>
-        photo.id === photoId ? { ...photo, selected: !photo.selected } : photo,
-      ),
-    );
-
-    const response = await fetch(`/api/photos/${photoId}/select`, { method: "POST" });
-    if (!response.ok) {
-      setPhotos(previous);
-      return;
-    }
-
-    const data = await response.json();
-    setPhotos((current) =>
-      current.map((photo) =>
-        photo.id === photoId ? { ...photo, selected: Boolean(data.selected) } : photo,
-      ),
-    );
   }
 
   async function sendComment(photoId: string) {
     const text = comment.trim();
-    if (!text || pending) return;
-
-    const response = await fetch(`/api/photos/${photoId}/comment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: text }),
-    });
-    if (!response.ok) return;
-
-    const data = await response.json();
-    setPhotos((current) =>
-      current.map((photo) =>
-        photo.id === photoId
-          ? { ...photo, comments: [data.comment, ...photo.comments] }
-          : photo,
-      ),
-    );
-    setComment("");
-    startTransition(() => router.refresh());
+    if (!text || commentLock.current) return;
+    const version = draftVersion.current;
+    commentLock.current = true;
+    setPending(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/photos/${photoId}/comment`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: text }),
+      });
+      if (!response.ok) throw new Error("Comment failed");
+      const data = await response.json();
+      setPhotos((current) => current.map((photo) => photo.id === photoId
+        ? { ...photo, comments: [data.comment, ...photo.comments] } : photo));
+      if (version === draftVersion.current) setComment("");
+    } catch {
+      setError(t("saveError"));
+    } finally {
+      commentLock.current = false;
+      setPending(false);
+    }
   }
 
   return (
     <div>
+      {error && !active && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
       <section
         aria-label={t("selectionSummary")}
         className="mt-8 grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3"
@@ -220,7 +224,7 @@ export function GalleryClient({
                   else triggerRefs.current.delete(photo.id);
                 }}
                 type="button"
-                onClick={() => setActiveId(photo.id)}
+                onClick={() => { draftVersion.current++; viewerTrigger.current = photo.id; setComment(""); setError(null); setActiveId(photo.id); }}
                 className="block aspect-[4/5] w-full overflow-hidden text-left"
                 aria-label={photo.filename}
               >
@@ -238,7 +242,7 @@ export function GalleryClient({
                 className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/65 text-lg text-white backdrop-blur transition hover:bg-black/85 focus:outline-none focus:ring-2 focus:ring-sand"
                 aria-label={t("favorite")}
                 aria-pressed={photo.favorite}
-                onClick={() => void toggleFavorite(photo.id)}
+                onClick={() => void togglePhoto(photo.id, "favorite")}
               >
                 {photo.favorite ? "♥" : "♡"}
               </button>
@@ -256,6 +260,7 @@ export function GalleryClient({
       {active && (
         <div
           className="fixed inset-0 z-[80] bg-black/95 p-3 md:p-6"
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={active.filename}
@@ -263,8 +268,8 @@ export function GalleryClient({
             if (event.target === event.currentTarget) closeViewer();
           }}
         >
-          <div className="mx-auto grid h-full max-w-7xl overflow-hidden border border-white/10 bg-[#101010] lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.65fr)]">
-            <div className="relative flex min-h-[50vh] items-center justify-center bg-black">
+          <div className="mx-auto grid h-full max-w-7xl grid-rows-[minmax(0,0.45fr)_minmax(0,0.55fr)] overflow-hidden lg:grid-rows-1 border border-white/10 bg-[#101010] lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.65fr)]">
+            <div className="relative flex min-h-0 items-center justify-center bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={active.thumbUrl}
@@ -319,7 +324,7 @@ export function GalleryClient({
                     type="button"
                     className={active.favorite ? "btn-primary !py-2" : "btn-ghost !py-2"}
                     aria-pressed={active.favorite}
-                    onClick={() => void toggleFavorite(active.id)}
+                    onClick={() => void togglePhoto(active.id, "favorite")}
                   >
                     {active.favorite ? "♥" : "♡"} {t("favorite")}
                   </button>
@@ -327,7 +332,7 @@ export function GalleryClient({
                     type="button"
                     className={active.selected ? "btn-primary !py-2" : "btn-ghost !py-2"}
                     aria-pressed={active.selected}
-                    onClick={() => void toggleSelect(active.id)}
+                    onClick={() => void togglePhoto(active.id, "selected")}
                   >
                     {active.selected ? "✓" : "+"} {t("selectAlbum")}
                   </button>
@@ -360,12 +365,15 @@ export function GalleryClient({
               </div>
 
               <div className="border-t border-white/10 p-4">
+                {error && <p role="alert" className="mb-3 text-sm text-red-300">{error}</p>}
                 <div className="flex gap-2">
                   <input
                     className="input-field"
                     value={comment}
                     maxLength={2000}
-                    onChange={(event) => setComment(event.target.value)}
+                    disabled={pending}
+                    aria-label={t("commentPlaceholder")}
+                    onChange={(event) => { draftVersion.current++; setComment(event.target.value); }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();

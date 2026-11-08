@@ -132,7 +132,8 @@
     "previousPhoto": "Foto anterior",
     "nextPhoto": "Foto siguiente",
     "closeViewer": "Cerrar visor",
-    "noComments": "Todavía no hay comentarios."
+    "noComments": "Todavía no hay comentarios.",
+    "saveError": "No se pudieron guardar los cambios. Comprueba tu conexión e inténtalo de nuevo."
   },
   "admin": {
     "panel": "Panel fotógrafo",
