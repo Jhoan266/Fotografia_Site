@@ -29,19 +29,19 @@ enum OrderStatus {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String
-  role         Role
-  locale       String         @default("es")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          Role
+  locale        String         @default("es")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   clientProfile ClientProfile?
-  favorites    Favorite[]
-  comments     Comment[]
-  selections   Selection[]
-  orders       Order[]
+  favorites     Favorite[]
+  comments      Comment[]
+  selections    Selection[]
+  orders        Order[]
 }
 
 model ClientProfile {
@@ -155,4 +155,12 @@ model Order {
   pack        Pack        @relation(fields: [packId], references: [id])
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
 }
