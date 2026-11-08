@@ -1,3 +1,5 @@
+import type { Readable } from "stream";
+
 export type StorageObject = {
   key: string;
   size: number;
@@ -7,7 +9,7 @@ export interface StorageProvider {
   put(key: string, data: Buffer): Promise<StorageObject>;
   get(key: string): Promise<Buffer>;
   exists(key: string): Promise<boolean>;
-  resolveLocalPath?(key: string): string;
+  openReadStream(key: string): Readable;
 }
 
 export type StoredPhoto = {
