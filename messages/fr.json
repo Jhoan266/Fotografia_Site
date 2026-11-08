@@ -132,7 +132,8 @@
     "previousPhoto": "Photo précédente",
     "nextPhoto": "Photo suivante",
     "closeViewer": "Fermer la visionneuse",
-    "noComments": "Aucun commentaire pour le moment."
+    "noComments": "Aucun commentaire pour le moment.",
+    "saveError": "Impossible d’enregistrer les modifications. Vérifiez votre connexion et réessayez."
   },
   "admin": {
     "panel": "Espace photographe",

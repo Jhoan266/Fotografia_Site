@@ -132,7 +132,8 @@
     "previousPhoto": "Previous photo",
     "nextPhoto": "Next photo",
     "closeViewer": "Close viewer",
-    "noComments": "No comments yet."
+    "noComments": "No comments yet.",
+    "saveError": "Could not save your changes. Check your connection and try again."
   },
   "admin": {
     "panel": "Photographer panel",

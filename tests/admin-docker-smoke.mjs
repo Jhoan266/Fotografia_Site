@@ -75,17 +75,45 @@ async function login(email) {
   const {r:denied}=await page('/api/photos/'+projects[0].id+'/download',client);
   assert([403,404].includes(denied.status));
   const image=await sharp({create:{width:8,height:8,channels:3,background:'#c5a37d'}}).jpeg().toBuffer();
-  const body=new FormData();body.set('projectId',projects[0].id);body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));
+  const body=new FormData();body.set('projectId',projects[0].id);body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));
   let r=await fetch(base+'/api/photos/upload',{method:'POST',headers:{cookie:admin,Origin:base},body});
-  assert.equal(r.status,200);const upload=await r.json();assert.equal(upload.count,1);
+  assert.equal(r.status,200);const upload=await r.json();assert.equal(upload.count,2);
   const photoId=upload.ids[0];
   try {
     const photo=await prisma.photo.findUnique({where:{id:photoId}});assert(photo?.thumbKey);
     r=await fetch(base+'/api/media/'+photo.thumbKey,{headers:{cookie:admin}});assert.equal(r.status,200);assert(r.headers.get('content-type').startsWith('image/'));
-    r=await fetch(base+'/api/photos/reorder',{method:'POST',headers:{cookie:admin,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({projectId:projects[0].id,photoIds:[photoId]})});assert.equal(r.status,200);
+    r=await fetch(base+'/api/photos/reorder',{method:'POST',headers:{cookie:admin,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({projectId:projects[0].id,photoIds:[...upload.ids].reverse()})});assert.equal(r.status,200);
     console.log('PASS upload, stored thumbnail delivery and photo reorder');
+    const photoPath=`/api/photos/${photoId}`;
+    const jsonHeaders={cookie:client,Origin:base,'Content-Type':'application/json'};
+    for(const route of ['favorite','select','comment']) {
+      const denied=await fetch(base+photoPath+'/'+route,{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:'draft must stay private'})});
+      assert.equal(denied.status,403,'Draft projects are not accessible to their client');
+    }
+    let zip=await fetch(base+`/api/photos/download-zip?projectId=${projects[0].id}`,{headers:{cookie:client}});assert.equal(zip.status,403);
+    await prisma.project.update({where:{id:projects[0].id},data:{status:'DELIVERED'}});
+    for(const [route,key] of [['favorite','favorite'],['select','selected']]) {
+      r=await fetch(base+photoPath+'/'+route,{method:'POST',headers:jsonHeaders});assert.equal(r.status,200);assert.equal((await r.json())[key],true);
+    }
+    r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:{cookie:client,Origin:'https://untrusted.invalid'}});assert.equal(r.status,403);
+    r=await fetch(base+photoPath+'/comment',{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:'  Comment from client  '})});assert.equal(r.status,200);assert.equal((await r.json()).comment.body,'Comment from client');
+    for(const text of ['   ','x'.repeat(2001)]) {
+      r=await fetch(base+photoPath+'/comment',{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:text})});assert.equal(r.status,400);
+    }
+    const gallery=await page(`/es/app/projects/${projects[0].id}`,client);assert.equal(gallery.r.status,200);assert(gallery.html.includes('Comment from client'));
+    r=await fetch(base+photoPath+'/download',{headers:{cookie:client}});assert.equal(r.status,200);assert.deepEqual(Buffer.from(await r.arrayBuffer()),image);
+    for(const fallback of ['selection','favorites','all']) {
+      zip=await fetch(base+`/api/photos/download-zip?projectId=${projects[0].id}`,{headers:{cookie:client}});assert.equal(zip.status,200);assert.equal(zip.headers.get('content-type'),'application/zip');
+      const bytes=Buffer.from(await zip.arrayBuffer());assert.equal(bytes.readUInt32LE(0),0x04034b50);assert(bytes.includes(Buffer.from('qa-photo.jpg')));assert.equal(bytes.readUInt16LE(bytes.length-12),fallback==='all'?2:1,'ZIP contains only the selected/favorite photos before falling back to all');if(fallback==='all') assert(bytes.includes(Buffer.from('qa-photo-2.jpg')),'Duplicate filenames are disambiguated');
+      if(fallback==='selection') {r=await fetch(base+photoPath+'/select',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).selected,false);}
+      if(fallback==='favorites') {r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).favorite,false);}
+    }
+    console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
+
   } finally {
-    r=await fetch(base+`/api/photos/${photoId}/delete`,{method:'DELETE',headers:{cookie:admin,Origin:base}});assert.equal(r.status,200);assert.equal((await r.json()).orphanedObjects,0);
+    for(const uploadedId of upload.ids) {
+      r=await fetch(base+`/api/photos/${uploadedId}/delete`,{method:'DELETE',headers:{cookie:admin,Origin:base}});assert.equal(r.status,200);assert.equal((await r.json()).orphanedObjects,0);
+    }
   }
   assert.equal(await prisma.photo.count({where:{projectId:projects[0].id}}),0);
   console.log('PASS photo deletion and temporary data cleanup');
