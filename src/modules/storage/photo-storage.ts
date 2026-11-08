@@ -51,3 +51,8 @@ export async function storedFileExists(key: string) {
 export async function openStoredFileStream(key: string) {
   return getStorageProvider().openReadStream(key);
 }
+
+
+export async function deleteStoredFile(key: string) {
+  return getStorageProvider().delete(key);
+}
