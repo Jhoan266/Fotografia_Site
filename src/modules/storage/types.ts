@@ -9,7 +9,7 @@ export interface StorageProvider {
   put(key: string, data: Buffer): Promise<StorageObject>;
   get(key: string): Promise<Buffer>;
   exists(key: string): Promise<boolean>;
-  openReadStream(key: string): Readable;
+  openReadStream(key: string): Promise<Readable> | Readable;
 }
 
 export type StoredPhoto = {
