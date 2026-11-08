@@ -9,6 +9,7 @@ export interface StorageProvider {
   put(key: string, data: Buffer): Promise<StorageObject>;
   get(key: string): Promise<Buffer>;
   exists(key: string): Promise<boolean>;
+  delete(key: string): Promise<void>;
   openReadStream(key: string): Promise<Readable> | Readable;
 }
 
