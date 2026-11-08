@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ActionLink, EmptyState, PageHeading, StatusBadge } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
 import { requireRole } from "@/lib/session";
 import { listProjectsForAdmin } from "@/modules/projects/queries";
 
@@ -19,8 +18,7 @@ export default async function AdminProjectsPage({
   const projects = await listProjectsForAdmin();
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
+    <div>
       <section className="mx-auto max-w-6xl px-5 py-14 md:px-8">
         <PageHeading eyebrow={t("panel")} title={t("projects")}
           actions={<ActionLink href={`/${locale}/admin/projects/new`}>{t("newProject")}</ActionLink>} />
@@ -44,6 +42,6 @@ export default async function AdminProjectsPage({
           ))}
         </ul>
       </section>
-    </main>
+    </div>
   );
 }

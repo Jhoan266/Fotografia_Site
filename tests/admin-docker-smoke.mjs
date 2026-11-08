@@ -65,7 +65,8 @@ async function login(email) {
   for(const locale of ['es','en','fr']) {
     const {html,r}=await page(`/${locale}/admin`,admin);assert.equal(r.status,200);
     for(let i=1;i<7;i++) assert(html.includes(`${tag}-project-${i}`),'Six newest projects render');
-    assert(!html.includes(`${tag}-project-0`),'Oldest project is outside recent list');
+    const recent=html.split('id="studio-recent"')[1]?.split('studio-engagement')[0] ?? html;
+    assert(!recent.includes(`${tag}-project-0`),'Oldest project is outside recent list');
     const labels={es:['Borrador','Entregado','Archivado'],en:['Draft','Delivered','Archived'],fr:['Brouillon','Livré','Archivé']}[locale];
     for(const label of labels) assert(html.includes(label),'Localized status renders');
     const detail=await page(`/${locale}/admin/projects/${projects[1].id}`,admin);

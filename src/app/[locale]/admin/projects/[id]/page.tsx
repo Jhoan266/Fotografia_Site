@@ -2,7 +2,6 @@ import { ActionLink, Button, PageHeading, StatusBadge } from "@/components/ui/de
 import { ActionForm } from "@/components/admin/ActionForm";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
 import { requireRole } from "@/lib/session";
@@ -23,8 +22,7 @@ export default async function AdminProjectDetailPage({
   if (!project) notFound();
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
+    <div>
       <section className="mx-auto max-w-6xl px-5 py-14 md:px-8">
         <PageHeading eyebrow={t("projects")} title={project.title}
           description={`${project.client.user.name} · ${project.client.user.email}`}
@@ -70,6 +68,6 @@ export default async function AdminProjectDetailPage({
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }
