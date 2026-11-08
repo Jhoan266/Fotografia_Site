@@ -6,6 +6,8 @@ import { hashPassword } from "@/lib/auth";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default async function AdminClientsPage({
   params,
 }: {
@@ -29,10 +31,25 @@ export default async function AdminClientsPage({
 
     const name = String(formData.get("name") || "").trim();
     const email = String(formData.get("email") || "").trim().toLowerCase();
-    const phone = String(formData.get("phone") || "").trim() || null;
-    const notes = String(formData.get("notes") || "").trim() || null;
-    const password = String(formData.get("password") || "Demo1234!");
-    if (!name || !email) return;
+    const phoneRaw = String(formData.get("phone") || "").trim();
+    const notesRaw = String(formData.get("notes") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    if (
+      !name ||
+      name.length > 120 ||
+      !EMAIL_RE.test(email) ||
+      email.length > 254 ||
+      password.length < 12 ||
+      password.length > 128 ||
+      phoneRaw.length > 40 ||
+      notesRaw.length > 2000
+    ) {
+      return;
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) return;
 
     const passwordHash = await hashPassword(password);
     await prisma.user.create({
@@ -41,7 +58,12 @@ export default async function AdminClientsPage({
         name,
         passwordHash,
         role: "CLIENT",
-        clientProfile: { create: { phone, notes } },
+        clientProfile: {
+          create: {
+            phone: phoneRaw || null,
+            notes: notesRaw || null,
+          },
+        },
       },
     });
     revalidatePath(`/${locale}/admin/clients`);
@@ -71,15 +93,23 @@ export default async function AdminClientsPage({
         </div>
         <form action={createClient} className="space-y-4 border border-white/10 p-6">
           <h2 className="font-display text-2xl">{t("newClient")}</h2>
-          <Field label={t("name")} name="name" required />
-          <Field label={t("email")} name="email" type="email" required />
-          <Field label={t("phone")} name="phone" />
-          <Field label={t("password")} name="password" placeholder="Demo1234!" />
+          <Field label={t("name")} name="name" required maxLength={120} />
+          <Field label={t("email")} name="email" type="email" required maxLength={254} />
+          <Field label={t("phone")} name="phone" maxLength={40} />
+          <Field
+            label={t("password")}
+            name="password"
+            type="password"
+            required
+            minLength={12}
+            maxLength={128}
+            autoComplete="new-password"
+          />
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("notes")}
             </span>
-            <textarea name="notes" className="input-field min-h-24" />
+            <textarea name="notes" maxLength={2000} className="input-field min-h-24" />
           </label>
           <button type="submit" className="btn-primary">
             {t("create")}
@@ -95,13 +125,17 @@ function Field({
   name,
   type = "text",
   required,
-  placeholder,
+  minLength,
+  maxLength,
+  autoComplete,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
-  placeholder?: string;
+  minLength?: number;
+  maxLength?: number;
+  autoComplete?: string;
 }) {
   return (
     <label className="block space-y-2">
@@ -111,7 +145,9 @@ function Field({
         name={name}
         type={type}
         required={required}
-        placeholder={placeholder}
+        minLength={minLength}
+        maxLength={maxLength}
+        autoComplete={autoComplete}
       />
     </label>
   );
