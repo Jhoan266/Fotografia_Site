@@ -27,25 +27,45 @@ export default async function NewProjectPage({
     "use server";
     const admin = await requireRole("ADMIN");
     if (!admin) return;
-    const title = String(formData.get("title") || "").trim();
-    const description = String(formData.get("description") || "").trim() || null;
-    const clientId = String(formData.get("clientId") || "");
-    const sessionDateRaw = String(formData.get("sessionDate") || "");
-    const packIds = formData.getAll("packIds").map(String);
-    if (!title || !clientId) return;
 
-    const project = await prisma.project.create({
+    const title = String(formData.get("title") || "").trim();
+    const descriptionRaw = String(formData.get("description") || "").trim();
+    const clientId = String(formData.get("clientId") || "").trim();
+    const sessionDateRaw = String(formData.get("sessionDate") || "").trim();
+    const packIds = [...new Set(formData.getAll("packIds").map(String))];
+
+    if (!title || title.length > 160 || descriptionRaw.length > 4000 || !clientId || clientId.length > 128) {
+      return;
+    }
+
+    const sessionDate = sessionDateRaw ? new Date(`${sessionDateRaw}T12:00:00.000Z`) : null;
+    if (sessionDate && Number.isNaN(sessionDate.getTime())) return;
+
+    const [client, allowedPacks] = await Promise.all([
+      prisma.clientProfile.findUnique({ where: { id: clientId }, select: { id: true } }),
+      packIds.length
+        ? prisma.pack.findMany({
+            where: { id: { in: packIds }, active: true },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    if (!client || allowedPacks.length !== packIds.length) return;
+
+    const created = await prisma.project.create({
       data: {
         title,
-        description,
-        clientId,
-        sessionDate: sessionDateRaw ? new Date(sessionDateRaw) : null,
+        description: descriptionRaw || null,
+        clientId: client.id,
+        sessionDate,
         packs: {
-          create: packIds.map((packId) => ({ packId })),
+          create: allowedPacks.map((pack) => ({ packId: pack.id })),
         },
       },
     });
-    redirect(`/${locale}/admin/projects/${project.id}`);
+
+    redirect(`/${locale}/admin/projects/${created.id}`);
   }
 
   return (
@@ -60,22 +80,20 @@ export default async function NewProjectPage({
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("title")}
             </span>
-            <input className="input-field" name="title" required />
+            <input className="input-field" name="title" required maxLength={160} />
           </label>
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("description")}
             </span>
-            <textarea className="input-field min-h-28" name="description" />
+            <textarea className="input-field min-h-28" name="description" maxLength={4000} />
           </label>
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("client")}
             </span>
             <select className="input-field" name="clientId" required defaultValue="">
-              <option value="" disabled>
-                —
-              </option>
+              <option value="" disabled>—</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.user.name} • {c.user.email}
@@ -100,9 +118,7 @@ export default async function NewProjectPage({
               </label>
             ))}
           </fieldset>
-          <button type="submit" className="btn-primary">
-            {t("create")}
-          </button>
+          <button type="submit" className="btn-primary">{t("create")}</button>
         </form>
       </section>
     </main>
