@@ -103,7 +103,7 @@ async function signedFetch(
 
   return fetch(url, {
     method,
-    body: method === "PUT" ? body : undefined,
+    body: method === "PUT" && body ? new Uint8Array(body) : undefined,
     headers: {
       Authorization: authorization,
       "x-amz-content-sha256": payloadHash,
