@@ -121,7 +121,18 @@
     "packs": "Packs",
     "packsSoon": "Payment coming soon",
     "orderStub": "Order recorded (no live payment)",
-    "back": "Back"
+    "back": "Back",
+    "selectionSummary": "Selection summary",
+    "totalPhotos": "Total photos",
+    "favoriteCount": "Favorites",
+    "selectedCount": "Selected",
+    "galleryFilters": "Gallery filters",
+    "emptyFilter": "There are no photos in this filter.",
+    "selectedBadge": "Selected",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "closeViewer": "Close viewer",
+    "noComments": "No comments yet."
   },
   "admin": {
     "panel": "Photographer panel",
