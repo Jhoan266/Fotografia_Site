@@ -4585,3 +4585,11 @@ body {
     padding: 22px;
   }
 }
+
+.portal-shell :is(#portal-sessions, #portal-guide) {
+  scroll-margin-top: 24px;
+}
+.portal-shell :is(#portal-sessions, #portal-guide):focus-visible {
+  outline: 1px solid #c5a37d70;
+  outline-offset: 8px;
+}
