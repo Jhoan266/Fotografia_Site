@@ -301,6 +301,14 @@
       "yourWebsite": "Votre vitrine sur le monde",
       "websiteDescription": "Consultez votre site et portfolio publics.",
       "footer": "Pour vous concentrer sur l’essentiel."
+    },
+    "vault": {
+      "title": "Coffre photo",
+      "private": "Accès privé du photographe",
+      "intro": "Choisissez un dossier client, puis un projet pour gérer ses photos.",
+      "folders": "Tous les dossiers",
+      "empty": "Ce dossier est vide.",
+      "download": "Télécharger l’original"
     }
   }
 }

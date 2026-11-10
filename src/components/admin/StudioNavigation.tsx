@@ -7,12 +7,12 @@ export function StudioNavigation({
   labels,
 }: {
   locale: string;
-  labels: { overview: string; projects: string; clients: string };
+  labels: { overview: string; projects: string; clients: string; vault: string };
 }) {
   const path = usePathname();
   const base = `/${locale}/admin`;
   return (
-    <nav aria-label={labels.overview} className="studio-navigation">
+    <nav aria-label={labels.overview} className="studio-navigation max-[700px]:!grid max-[700px]:grid-cols-2">
       {(
         [
           { href: base, label: labels.overview, icon: "overview" },
@@ -22,6 +22,7 @@ export function StudioNavigation({
             icon: "projects",
           },
           { href: base + "/clients", label: labels.clients, icon: "clients" },
+          { href: base + "/vault", label: labels.vault, icon: "lock" },
         ] as const
       ).map((item) => {
         const active =
@@ -32,6 +33,7 @@ export function StudioNavigation({
           <Link
             key={item.href}
             href={item.href}
+            prefetch={item.href.endsWith("/vault") ? false : undefined}
             aria-current={active ? "page" : undefined}
             className={`studio-nav-link ds-focus ${active ? "is-active" : ""}`}
           >

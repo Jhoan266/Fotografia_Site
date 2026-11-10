@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { getIronSession, type SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
 import type { Role } from "@prisma/client";
@@ -49,7 +50,12 @@ export async function getSession() {
 
 export async function requireUser() {
   const session = await getSession();
-  return session.user ?? null;
+  if (!session.user) return null;
+  const current = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, email: true, name: true, role: true },
+  });
+  return current?.role === session.user.role ? current : null;
 }
 
 export async function requireRole(role: Role) {

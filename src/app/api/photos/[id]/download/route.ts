@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { readStoredFile } from "@/lib/storage";
 import { contentDispositionAttachment } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
@@ -10,13 +10,13 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session.user) {
+  const user = await requireUser();
+  if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const { id } = await context.params;
-  const photo = await getAccessiblePhoto(session.user, id);
+  const photo = await getAccessiblePhoto(user, id);
   if (!photo) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }

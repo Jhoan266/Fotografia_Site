@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
 
@@ -8,8 +8,8 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await requireUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!hasValidSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
   }
@@ -19,11 +19,11 @@ export async function POST(
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
-  const photo = await getAccessiblePhoto(session.user, id);
+  const photo = await getAccessiblePhoto(user, id);
   if (!photo) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const existing = await prisma.selection.findUnique({
-    where: { userId_photoId: { userId: session.user.id, photoId: id } },
+    where: { userId_photoId: { userId: user.id, photoId: id } },
   });
 
   if (existing) {
@@ -32,7 +32,7 @@ export async function POST(
   }
 
   await prisma.selection.create({
-    data: { userId: session.user.id, photoId: id, status: "SELECTED" },
+    data: { userId: user.id, photoId: id, status: "SELECTED" },
   });
   return NextResponse.json({ selected: true });
 }

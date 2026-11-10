@@ -13,10 +13,12 @@ export function AdminPhotoManager({
   projectId,
   initialPhotos,
   deleteLabel,
+  downloadLabel,
 }: {
   projectId: string;
   initialPhotos: AdminPhoto[];
   deleteLabel: string;
+  downloadLabel?: string;
 }) {
   const router = useRouter();
   const [photos, setPhotos] = useState(initialPhotos);
@@ -74,12 +76,17 @@ export function AdminPhotoManager({
           <div className="aspect-[4/5] overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              loading="lazy"
               src={photo.thumbUrl}
               alt={photo.filename}
               className="h-full w-full object-cover"
             />
           </div>
-          <div className="flex items-center justify-between gap-2 p-2">
+          {downloadLabel && <div className="space-y-2 px-3 pt-3">
+            <p className="truncate text-sm" title={photo.filename}>{photo.filename}</p>
+            <a className="ds-focus inline-block text-xs text-sand" href={`/api/photos/${encodeURIComponent(photo.id)}/download`}>{downloadLabel}</a>
+          </div>}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2">
             <div className="flex gap-1">
               <button
                 type="button"

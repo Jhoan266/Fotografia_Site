@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZipArchive } from "archiver";
 import { Readable } from "stream";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { openStoredFileStream, storedFileExists } from "@/lib/storage";
 import { sanitizeFilename } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const session = await getSession();
-  if (!session.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await requireUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const projectId = request.nextUrl.searchParams.get("projectId")?.trim();
   if (!projectId || projectId.length > 128) {
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   if (
-    session.user.role === "CLIENT" &&
-    (project.client.userId !== session.user.id || project.status !== "DELIVERED")
+    user.role === "CLIENT" &&
+    (project.client.userId !== user.id || project.status !== "DELIVERED")
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
   let photos = await prisma.photo.findMany({
     where: {
       projectId,
-      selections: { some: { userId: session.user.id, status: "SELECTED" } },
+      selections: { some: { userId: user.id, status: "SELECTED" } },
     },
     orderBy: { sortOrder: "asc" },
   });
 
   if (!photos.length) {
     photos = await prisma.photo.findMany({
-      where: { projectId, favorites: { some: { userId: session.user.id } } },
+      where: { projectId, favorites: { some: { userId: user.id } } },
       orderBy: { sortOrder: "asc" },
     });
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readStoredFile } from "@/lib/storage";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import path from "path";
 
@@ -18,8 +18,8 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
-  const session = await getSession();
-  if (!session.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await requireUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { path: parts } = await context.params;
   if (!Array.isArray(parts) || parts.length < 2 || parts.length > 3) {
@@ -38,8 +38,8 @@ export async function GET(
   if (!photo) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   if (
-    session.user.role === "CLIENT" &&
-    (photo.project.client.userId !== session.user.id || photo.project.status !== "DELIVERED")
+    user.role === "CLIENT" &&
+    (photo.project.client.userId !== user.id || photo.project.status !== "DELIVERED")
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -49,7 +49,7 @@ export async function GET(
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": contentTypeFor(key),
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; sandbox",
       },
