@@ -134,3 +134,7 @@ Si hay un CDN delante, configura el proxy para aceptar la IP original solo
 desde los rangos de confianza de ese CDN. El acceso directo en desarrollo
 funciona con una URL HTTP de loopback sin clave y mantiene el limite por
 cuenta. En una URL publica, el inicio de sesion requiere el proxy configurado.
+
+## Copias de seguridad
+
+Consulta la [guia de copia y restauracion](docs/backup-restore.md).
