@@ -1,14 +1,19 @@
 import { PrismaClient, Role, ProjectStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+if (process.env.NODE_ENV === "production") {
+  throw new Error("Demo seed is disabled in production.");
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("Demo1234!", 12);
+  const demoPassword = process.env.DEMO_PASSWORD || "Demo1234!LocalOnly";
+  const passwordHash = await bcrypt.hash(demoPassword, 12);
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@verasolis.studio" },
-    update: { passwordHash, name: "Vera Solís", role: Role.ADMIN },
+    update: { name: "Vera Solís", role: Role.ADMIN },
     create: {
       email: "admin@verasolis.studio",
       passwordHash,
@@ -20,7 +25,7 @@ async function main() {
 
   const clientUser = await prisma.user.upsert({
     where: { email: "cliente@demo.com" },
-    update: { passwordHash, name: "Laura Martín", role: Role.CLIENT },
+    update: { name: "Laura Martín", role: Role.CLIENT },
     create: {
       email: "cliente@demo.com",
       passwordHash,
@@ -83,7 +88,7 @@ async function main() {
     });
   }
 
-  console.log("Seed OK", {
+  console.log("Demo seed OK", {
     admin: admin.email,
     client: clientUser.email,
     project: project.title,
@@ -91,8 +96,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {

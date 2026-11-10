@@ -1,0 +1,2 @@
+scripts/backup-local.sh text eol=lf
+tests/s3-bucket-restore.ps1 text eol=lf

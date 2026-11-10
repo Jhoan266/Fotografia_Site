@@ -1,0 +1,384 @@
+// Run against an isolated local Docker web service configured with the dedicated MFA fixture.
+import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import sharp from 'sharp';
+const prisma = new PrismaClient();
+const base = 'http://localhost:3000';
+assert.equal(process.env.ALLOW_LOCAL_SMOKE, '1', 'Explicit local smoke-test opt-in required');
+assert.equal(process.env.NEXT_PUBLIC_APP_URL, base, 'Run only against the local application');
+const tag = `qa-${randomUUID()}`;
+const password = randomUUID() + 'Ab!';
+const ids = [];
+const adminEmail = process.env.SMOKE_TOTP_EMAIL;
+assert(adminEmail?.endsWith('@example.invalid'), 'Configure a dedicated local MFA fixture account');
+
+function fixtureCode(step) {
+ const counter = Buffer.alloc(8);
+ counter.writeBigUInt64BE(BigInt(step));
+ const digest = createHmac('sha1', '12345678901234567890').update(counter).digest();
+ const value = digest.readUInt32BE(digest.at(-1) & 15) & 0x7fffffff;
+ return String(value % 1_000_000).padStart(6, '0');
+}
+function decode(s) { return s.replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
+async function page(path, cookie='') {
+ const r = await fetch(base+path,{headers:{cookie},redirect:'manual'});
+ return {r,html:await r.text()};
+}
+async function submit(path, html, values, cookie='', formId, extraHeaders={}) {
+ const forms = [...html.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)];
+ const form = formId === 'logout' ? forms.find(m=>m[2].includes('Cerrar sesi')) : formId ? forms.find(m=>m[1].includes(`id="${formId}"`)) : forms.find(m=>m[2].includes('name="email"') || m[2].includes('name="title"'));
+ assert(form,'Rendered action form exists');
+ const body = new FormData();
+ for (const m of form[2].matchAll(/<input\b([^>]*)>/g)) {
+  const attrs=Object.fromEntries([...m[1].matchAll(/([\w:$-]+)="([^"]*)"/g)].map(a=>[a[1],decode(a[2])]));
+  if(attrs.type==='hidden' && attrs.name) body.append(attrs.name,attrs.value||'');
+ }
+ for(const [key,value] of Object.entries(values)) body.set(key,value);
+ const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base,...extraHeaders},body,redirect:'manual'});
+ return {r,html:await r.text()};
+}
+const proxyToken = process.env.TRUSTED_PROXY_TOKEN;
+const proxyHeaders = proxyToken ? {
+ 'x-studio-proxy-token': proxyToken,
+ 'x-studio-client-ip': '192.0.2.10',
+ 'x-forwarded-for': '192.0.2.99',
+} : {};
+async function attemptLogin(email, totp, sourceHeaders = proxyHeaders) {
+ const {html}=await page('/es/login');
+ return (await submit('/es/login',html,{email,password,locale:'es',...(totp ? {totp} : {})}, '', undefined, sourceHeaders)).r;
+}
+async function login(email, totp) {
+ const r=await attemptLogin(email, totp);
+ assert.equal(r.status,303,'Login redirects');
+ const cookie=r.headers.getSetCookie().find(value=>value.startsWith('vs_session='))?.split(';')[0];
+ assert(cookie?.startsWith('vs_session='),'Login sets session');
+ return cookie;
+}
+(async()=>{
+ try {
+  const hash=await bcrypt.hash(password,12);
+  for(const role of ['ADMIN','CLIENT']) {
+   const u=await prisma.user.create({data:{email:role==='ADMIN' ? adminEmail : `${tag}-client@example.invalid`,name:tag+role,passwordHash:hash,role}});ids.push(u.id);
+  }
+  {
+   for (const invalidCode of [undefined, 'invalid', fixtureCode(Math.floor(Date.now()/30_000)-2)]) {
+    const rejected = await attemptLogin(adminEmail, invalidCode);
+    assert.notEqual(rejected.status,303);
+    assert.equal(rejected.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+   }
+  }
+  const unconfigured = await prisma.user.create({
+   data:{email:`${tag}-unconfigured@example.invalid`,name:tag,passwordHash:hash,role:'ADMIN'},
+  });
+  ids.push(unconfigured.id);
+  const unconfiguredLogin = await attemptLogin(unconfigured.email,fixtureCode(Math.floor(Date.now()/30_000)));
+  assert.notEqual(unconfiguredLogin.status,303);
+  assert.equal(unconfiguredLogin.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+  const code = fixtureCode(Math.floor(Date.now()/30_000)-1);
+  const admin=await login(adminEmail,code);
+  {
+   const replay = await attemptLogin(adminEmail,code);
+   assert.notEqual(replay.status,303);
+   assert.equal(replay.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+   assert.equal((await prisma.authSession.updateMany({
+     where:{userId:ids[0]},data:{adminVerified:false}
+   })).count,1);
+   assert.equal((await page('/api/photos/download-zip',admin)).r.status,401);
+   await prisma.authSession.updateMany({where:{userId:ids[0]},data:{adminVerified:true}});
+   console.log('PASS admin MFA, missing code, replay, and unverified session rejection');
+  }
+  const client=await login(`${tag}-client@example.invalid`);
+  if (proxyToken) {
+    const blocked = await attemptLogin(`${tag}-client@example.invalid`, undefined, {
+      'x-forwarded-for': '192.0.2.10',
+      'x-studio-client-ip': '192.0.2.10',
+    });
+    assert.notEqual(blocked.status, 303);
+    assert.equal(blocked.headers.getSetCookie().some(value => value.startsWith('vs_session=')), false);
+    const ipKey = ip => 'login-ip:' + createHash('sha256').update(ip).digest('hex');
+    assert((await prisma.rateLimitBucket.findUnique({ where: { key: ipKey('192.0.2.10') } })).count > 1);
+    assert.equal(await prisma.rateLimitBucket.findUnique({ where: { key: ipKey('192.0.2.99') } }), null);
+    console.log('PASS login rejects unauthenticated forwarding and successful login preserves the trusted IP bucket');
+  }
+  for(const locale of ['es','en','fr']) {
+   for(const route of ['admin','admin/clients','admin/projects/new','admin/vault']) {
+    for(const cookie of ['',client]) {
+     const {r}=await page(`/${locale}/${route}`,cookie);
+     assert.equal(r.status,307);assert.equal(new URL(r.headers.get('location'),base).pathname,`/${locale}/${cookie ? "app" : "login"}`);
+    }
+    const {r,html}=await page(`/${locale}/${route}`,admin);assert.equal(r.status,200);assert(!html.includes('NEXT_HTTP_ERROR_FALLBACK;500'));
+   }
+  }
+  console.log('PASS login, admin access and CLIENT/anonymous rejection across ES/EN/FR');
+  const profile=await prisma.clientProfile.create({data:{userId:ids[1]}});
+  const projects=[];
+  for(let i=0;i<7;i++) projects.push(await prisma.project.create({data:{
+    clientId:profile.id,title:`${tag}-project-${i}`,
+    status:["DRAFT","DELIVERED","ARCHIVED"][i%3],
+    updatedAt:new Date(Date.now()+i*1000),sessionDate:new Date("2026-11-08T12:00:00Z"),
+  }}));
+  for(const locale of ['es','en','fr']) {
+    const {html,r}=await page(`/${locale}/admin`,admin);assert.equal(r.status,200);
+    for(let i=1;i<7;i++) assert(html.includes(`${tag}-project-${i}`),'Six newest projects render');
+    const recent=html.split('id="studio-recent"')[1]?.split('studio-engagement')[0] ?? html;
+    assert(!recent.includes(`${tag}-project-0`),'Oldest project is outside recent list');
+    const labels={es:['Borrador','Entregado','Archivado'],en:['Draft','Delivered','Archived'],fr:['Brouillon','Livré','Archivé']}[locale];
+    for(const label of labels) assert(html.includes(label),'Localized status renders');
+    const detail=await page(`/${locale}/admin/projects/${projects[1].id}`,admin);
+    assert.equal(detail.r.status,200);assert(detail.html.includes(labels[1]));
+  }
+  console.log('PASS persisted dashboard data, six-project limit, and localized detail/status rendering');
+  for(const locale of ['es','en','fr']) {
+    const portal=await page(`/${locale}/app`,client);assert.equal(portal.r.status,200);
+    assert(portal.html.includes(`${tag}-project-1`) && portal.html.includes(`${tag}-project-4`),'Delivered client sessions render');
+    assert(!portal.html.includes(`${tag}-project-0`) && !portal.html.includes(`${tag}-project-2`),'Draft and archived sessions stay out of the client portal');
+  }
+  console.log('PASS private client portal delivered-only sessions in ES/EN/FR');
+
+  const vault = await page(`/es/admin/vault?client=${profile.id}`, admin);
+  assert.equal(vault.r.status, 200);
+  assert(vault.html.includes(projects[0].title));
+  const folder = await page(`/es/admin/vault?client=${profile.id}&project=${projects[0].id}`, admin);
+  assert.equal(folder.r.status, 200);
+  assert(folder.html.includes(projects[0].title));
+  const mismatch = await page(`/es/admin/vault?client=${profile.id}&project=missing`, admin);
+  assert.equal(mismatch.r.status, 404);
+  const {r:denied}=await page('/api/photos/'+projects[0].id+'/download',client);
+  assert([403,404].includes(denied.status));
+  const image=await sharp({create:{width:8,height:6,channels:3,background:'#c5a37d'}}).jpeg().withMetadata({ orientation: 6 }).withExifMerge({ IFD0: { ImageDescription: 'Private capture metadata' } }).toBuffer();
+  assert((await sharp(image).metadata()).exif);
+  const assertDelivery = async (bytes) => {
+    const info = await sharp(bytes).metadata();
+    assert.equal(info.exif, undefined);
+    assert.equal(info.xmp, undefined);
+    assert.equal(info.orientation, undefined);
+    assert.deepEqual([info.width, info.height], [6, 8]);
+  };
+  const firstZipEntry = (bytes) => {
+    const directory = bytes.readUInt32LE(bytes.length - 6);
+    const length = bytes.readUInt32LE(directory + 20);
+    const offset = bytes.readUInt32LE(directory + 42);
+    const start = offset + 30 + bytes.readUInt16LE(offset + 26) + bytes.readUInt16LE(offset + 28);
+    return bytes.subarray(start, start + length);
+  };
+  const body=new FormData();body.set('projectId',projects[0].id);body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));
+  const uploadForm = (files) => {
+    const form = new FormData();
+    form.set('projectId', projects[0].id);
+    for (const file of files) form.append('files', file);
+    return fetch(base + '/api/photos/upload', { method: 'POST', headers: { cookie: admin, Origin: base }, body: form });
+  };
+  const uploadFile = (data, name = 'qa-limit.jpg') => new File([data], name, { type: 'image/jpeg' });
+  const storageEntries = async () => (await Promise.all(['originals', 'thumbs'].map(folder =>
+    readdir(`/app/storage/${folder}`)))).flat().sort();
+  const entriesBefore = await storageEntries();
+  const malformed = await fetch(base + '/api/photos/upload', {
+    method: 'POST', headers: { cookie: admin, Origin: base, 'Content-Type': 'multipart/form-data; boundary=qa' },
+    body: 'not multipart',
+  });
+  assert.equal(malformed.status, 400);
+  assert.equal((await uploadForm([uploadFile(Buffer.alloc(20 * 1024 * 1024 + 1))])).status, 413);
+  assert.equal((await uploadForm(Array.from({ length: 11 }, () => uploadFile(image)))).status, 400);
+  const largeImage = await sharp({ create: { width: 8001, height: 8000, channels: 3, background: '#fff' } }).jpeg().toBuffer();
+  assert.equal((await uploadForm([uploadFile(largeImage)])).status, 400);
+  assert.equal((await uploadForm([uploadFile(image), uploadFile(Buffer.from('invalid image'))])).status, 400);
+  assert.equal(await prisma.photo.count({ where: { projectId: projects[0].id } }), 0);
+  assert.deepEqual(await storageEntries(), entriesBefore);
+  console.log('PASS malformed, oversized and over-dimension uploads rejected; failed batch rolled back');
+  let r=await fetch(base+'/api/photos/upload',{method:'POST',headers:{cookie:admin,Origin:base},body});
+  assert.equal(r.status,200);const upload=await r.json();assert.equal(upload.count,2);
+  const photoId=upload.ids[0];
+  const projectId = projects[0].id;
+  const adminZip = `/api/photos/download-zip?projectId=${projectId}`;
+  const deletePath = `/api/photos/${photoId}/delete`;
+  const verificationPage = `/es/admin/projects/${projectId}`;
+  const verificationForm = `vault-verify-${projectId}`;
+  const verify = async (candidate) => {
+    const { html } = await page(verificationPage, admin);
+    return submit(verificationPage, html, { password: candidate }, admin, verificationForm);
+  };
+  const exportRequest = (cookie = admin, origin = base) => fetch(base + adminZip, {
+    method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
+  });
+  const deleteRequest = (origin) => fetch(base + deletePath, {
+    method: 'DELETE', headers: { cookie: admin, ...(origin ? { Origin: origin } : {}) },
+  });
+  {
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal((await deleteRequest(base)).status, 403);
+    await verify(password + 'wrong');
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal(await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } }), 0);
+    await verify(password);
+    assert.equal((await page(adminZip, admin)).r.status, 403);
+    assert.equal((await exportRequest(client)).status, 403);
+    assert.equal((await exportRequest(admin, null)).status, 403);
+    assert.equal((await exportRequest(admin, 'https://untrusted.invalid')).status, 403);
+    const exported = await exportRequest();
+    assert.equal(exported.status, 200);
+    assert.equal(exported.headers.get('content-type'), 'application/zip');
+    const adminArchive = Buffer.from(await exported.arrayBuffer());
+    assert.equal(adminArchive.readUInt32LE(0), 0x04034b50);
+    assert.deepEqual(firstZipEntry(adminArchive), image);
+    assert.equal((await deleteRequest()).status, 403);
+    assert.equal((await deleteRequest('https://untrusted.invalid')).status, 403);
+    await prisma.authSession.updateMany({
+      where: { userId: ids[0] }, data: { vaultVerifiedUntil: new Date(0) },
+    });
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal((await deleteRequest(base)).status, 403);
+    await verify(password);
+    console.log('PASS sensitive actions require recent verification and deletion requires a trusted origin');
+    const photo=await prisma.photo.findUnique({where:{id:photoId}});assert(photo?.thumbKey);
+    r=await fetch(base+'/api/media/'+photo.thumbKey,{headers:{cookie:admin}});assert.equal(r.status,200);assert(r.headers.get('content-type').startsWith('image/'));assert(r.headers.get('cache-control').includes('no-store'));
+    await prisma.user.update({where:{id:ids[0]},data:{role:'CLIENT'}});
+    try {
+      const revoked = await page('/api/media/'+photo.thumbKey,admin);
+      assert.equal(revoked.r.status,401);
+    } finally {
+      await prisma.user.update({where:{id:ids[0]},data:{role:'ADMIN'}});
+    }
+    r=await fetch(base+'/api/photos/reorder',{method:'POST',headers:{cookie:admin,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({projectId:projects[0].id,photoIds:[...upload.ids].reverse()})});assert.equal(r.status,200);
+    console.log('PASS upload, stored thumbnail delivery and photo reorder');
+    const photoPath=`/api/photos/${photoId}`;
+    const jsonHeaders={cookie:client,Origin:base,'Content-Type':'application/json'};
+    for(const route of ['favorite','select','comment']) {
+      const denied=await fetch(base+photoPath+'/'+route,{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:'draft must stay private'})});
+      assert.equal(denied.status,403,'Draft projects are not accessible to their client');
+    }
+    let zip=await fetch(base+`/api/photos/download-zip?projectId=${projects[0].id}`,{headers:{cookie:client}});assert.equal(zip.status,403);
+    await prisma.project.update({where:{id:projects[0].id},data:{status:'DELIVERED'}});
+    for(const [route,key] of [['favorite','favorite'],['select','selected']]) {
+      r=await fetch(base+photoPath+'/'+route,{method:'POST',headers:jsonHeaders});assert.equal(r.status,200);assert.equal((await r.json())[key],true);
+    }
+    r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:{cookie:client,Origin:'https://untrusted.invalid'}});assert.equal(r.status,403);
+    r=await fetch(base+photoPath+'/comment',{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:'  Comment from client  '})});assert.equal(r.status,200);assert.equal((await r.json()).comment.body,'Comment from client');
+    for(const text of ['   ','x'.repeat(2001)]) {
+      r=await fetch(base+photoPath+'/comment',{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:text})});assert.equal(r.status,400);
+    }
+    const gallery=await page(`/es/app/projects/${projects[0].id}`,client);assert.equal(gallery.r.status,200);assert(gallery.html.includes('Comment from client'));
+    r=await fetch(base+photoPath+'/download',{headers:{cookie:client}});assert.equal(r.status,200);await assertDelivery(Buffer.from(await r.arrayBuffer()));
+    const mediaCopy = await fetch(base + '/api/media/' + photo.storageKey, { headers: { cookie: client } });
+    assert.equal(mediaCopy.status, 200);
+    await assertDelivery(Buffer.from(await mediaCopy.arrayBuffer()));
+    const original = await fetch(base + photoPath + '/download', { headers: { cookie: admin } });
+    assert.equal(original.status, 200);
+    assert.deepEqual(Buffer.from(await original.arrayBuffer()), image);
+    for(const fallback of ['selection','favorites','all']) {
+      zip=await fetch(base+`/api/photos/download-zip?projectId=${projects[0].id}`,{headers:{cookie:client}});assert.equal(zip.status,200);assert.equal(zip.headers.get('content-type'),'application/zip');
+      const bytes=Buffer.from(await zip.arrayBuffer());assert.equal(bytes.readUInt32LE(0),0x04034b50);assert(bytes.includes(Buffer.from('qa-photo.jpg')));assert.equal(bytes.readUInt16LE(bytes.length-12),fallback==='all'?2:1,'ZIP contains only the selected/favorite photos before falling back to all');if(fallback==='all') assert(bytes.includes(Buffer.from('qa-photo-2.jpg')),'Duplicate filenames are disambiguated');
+      await assertDelivery(firstZipEntry(bytes));
+      if(fallback==='selection') {r=await fetch(base+photoPath+'/select',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).selected,false);}
+      if(fallback==='favorites') {r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).favorite,false);}
+    }
+    console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
+
+    const restorePath = `/api/photos/${photoId}/restore`;
+    const restore = (cookie, origin = base) => fetch(base + restorePath, {
+      method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
+    });
+    assert.equal((await deleteRequest(base)).status, 200);
+    assert.equal((await deleteRequest(base)).status, 404);
+    assert((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt);
+    assert.equal((await restore(client)).status, 401);
+    assert.equal((await restore(admin, null)).status, 403);
+    assert.equal((await restore(admin, 'https://untrusted.invalid')).status, 403);
+    for (const cookie of [client, admin]) {
+      assert.equal((await page('/api/media/' + photo.thumbKey, cookie)).r.status, 404);
+      assert.equal((await page('/api/media/' + photo.storageKey, cookie)).r.status, 404);
+      const download = await page(photoPath + '/download', cookie);
+      assert([403,404].includes(download.r.status));
+    }
+    for (const operation of ['favorite', 'select', 'comment']) {
+      const response = await fetch(base + photoPath + '/' + operation, {
+        method: 'POST', headers: jsonHeaders, body: JSON.stringify({ body: 'Hidden photo' }),
+      });
+      assert([403,404].includes(response.status));
+    }
+    const orderWithTrashedPhoto = await fetch(base + '/api/photos/reorder', {
+      method: 'POST', headers: { cookie: admin, Origin: base, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId, photoIds: upload.ids }),
+    });
+    assert.equal(orderWithTrashedPhoto.status, 400);
+    const hiddenGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert(!hiddenGallery.html.includes(photoId));
+    const trashPage = await page(`/es/admin/vault?client=${profile.id}&project=${projectId}`, admin);
+    assert(trashPage.html.includes('Papelera') && trashPage.html.includes('Restaurar'));
+    assert(!trashPage.html.includes(photo.thumbKey));
+    for (const archive of [
+      await exportRequest(),
+      await fetch(base + adminZip, { headers: { cookie: client } }),
+    ]) {
+      assert.equal(archive.status, 200);
+      const bytes = Buffer.from(await archive.arrayBuffer());
+      assert.equal(bytes.readUInt16LE(bytes.length - 12), 1);
+    }
+    await prisma.authSession.updateMany({
+      where: { userId: ids[0] }, data: { vaultVerifiedUntil: new Date(0) },
+    });
+    assert.equal((await restore(admin)).status, 403);
+    await verify(password);
+    const attempts = await Promise.all([restore(admin), restore(admin)]);
+    assert.deepEqual(attempts.map(response => response.status).sort(), [200, 404]);
+    assert.equal((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt, null);
+    const restored = await fetch(base + photoPath + '/download', { headers: { cookie: client } });
+    assert.equal(restored.status, 200);
+    await assertDelivery(Buffer.from(await restored.arrayBuffer()));
+    const restoredGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert(restoredGallery.html.includes('Comment from client'));
+    const audit = await prisma.photoAuditEvent.findMany({ where: { actorId: ids[0], projectId } });
+    assert.deepEqual(audit.filter(event => event.action === 'ZIP_REQUESTED').map(event => event.photoCount).sort(), [1, 2]);
+    for (const action of ['PHOTO_TRASHED', 'PHOTO_RESTORED']) {
+      const events = audit.filter(event => event.action === action);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].photoId, photoId);
+      assert.equal(events[0].photoCount, 1);
+    }
+    console.log('PASS trash access isolation, filtered galleries and ZIPs, concurrent restore, preserved original and audit records');
+  }
+
+  const fixtureKey = 'originals/zip-limit-fixture.jpg';
+  await prisma.photo.createMany({
+    data: Array.from({ length: 501 }, (_, i) => ({
+      projectId, storageKey: fixtureKey, filename: `limit-${i}.jpg`, sortOrder: 1000 + i,
+    })),
+  });
+  try {
+    const previousAuditCount = await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } });
+    assert.equal((await exportRequest()).status, 413);
+    assert.equal((await page(adminZip, client)).r.status, 413);
+    assert.equal(await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } }), previousAuditCount);
+  } finally {
+    await prisma.photo.deleteMany({ where: { projectId, storageKey: fixtureKey } });
+  }
+  const nextExport = await exportRequest();
+  assert.equal(nextExport.status, 200);
+  await nextExport.arrayBuffer();
+  console.log('PASS ZIP photo count limit for both roles and slot release after rejection');
+
+  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
+  assert.equal((await exportRequest(secondAdmin)).status, 403);
+  const logoutPage = await page('/es/admin/vault', admin);
+  assert.equal(logoutPage.r.status, 200);
+  const logout = await submit('/es/admin/vault', logoutPage.html, {}, admin, 'logout');
+  assert.equal(logout.r.status, 303);
+  assert.equal((await page('/es/admin/vault', admin)).r.status, 307);
+  assert.equal((await page('/api/photos/download-zip', admin)).r.status, 401);
+  assert.equal((await page('/es/admin/vault', secondAdmin)).r.status, 200);
+  assert.equal((await prisma.authSession.updateMany({
+    where: { userId: ids[0] },
+    data: { expiresAt: new Date(0) },
+  })).count, 1);
+  assert.equal((await page('/es/admin/vault', secondAdmin)).r.status, 307);
+  assert.equal((await page('/api/photos/download-zip', secondAdmin)).r.status, 401);
+  console.log('PASS logout revokes only the active session and expired sessions cannot access vault or ZIP');
+
+ } finally {
+  await prisma.photoAuditEvent.deleteMany({where:{actorId:{in:ids}}});
+  await prisma.user.deleteMany({where:{id:{in:ids}}});
+  await prisma.$disconnect();
+ }
+})().catch(e=>{console.error(e);process.exitCode=1;});

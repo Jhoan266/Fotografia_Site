@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SESSION_SECRET: ci-only-session-secret-please-replace-1234567890
+      DATABASE_URL: postgresql://fotografia:fotografia@localhost:5432/fotografia?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_PATH: ./storage
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fotografia
+          POSTGRES_PASSWORD: fotografia
+          POSTGRES_DB: fotografia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fotografia -d fotografia"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
+      - name: Security unit tests
+        run: npx --no-install tsx --test tests/login-source.test.ts tests/upload-body.test.ts tests/zip-export.test.ts
+
+      - name: Backup retention tests
+        run: python3 tests/backup-retention-test.py -v
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Isolated PostgreSQL and S3 restore
+        shell: pwsh
+        run: ./tests/s3-bucket-restore.ps1
+
+  app-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: fotografia-ci-smoke
+      POSTGRES_PASSWORD: ci-only-postgres
+      SESSION_SECRET: ci-only-session-secret-please-replace-1234567890
+      ADMIN_TOTP_SECRETS: '{"qa-mfa@example.invalid":"GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"}'
+      TRUSTED_PROXY_TOKEN: ci-only-proxy-token-not-for-production
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      MINIO_ROOT_USER: ci-unused-minio
+      MINIO_ROOT_PASSWORD: ci-unused-minio-password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and start the isolated application
+        run: |
+          docker compose up -d --build --wait --wait-timeout 90 web
+          curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --max-time 3 \
+            http://127.0.0.1:3000/es/login > /dev/null
+
+      - name: Exercise application security and photo workflows
+        run: |
+          docker compose exec -T -e ALLOW_LOCAL_SMOKE=1 -e SMOKE_TOTP_EMAIL=qa-mfa@example.invalid \
+            web node --input-type=module < tests/admin-docker-smoke.mjs
+
+      - name: Print container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Remove test containers and volumes
+        if: always()
+        run: docker compose down -v --remove-orphans

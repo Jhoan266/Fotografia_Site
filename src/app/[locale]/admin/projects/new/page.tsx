@@ -1,8 +1,11 @@
+import { ActionLink, Button, EmptyState, FormField, PageHeading } from "@/components/ui/design-system";
+import { ActionForm } from "@/components/admin/ActionForm";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
-import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
+import { listClientOptions } from "@/modules/clients/queries";
+import { createProjectFromForm } from "@/modules/projects/actions";
+import { listActivePacks } from "@/modules/projects/queries";
 
 export default async function NewProjectPage({
   params,
@@ -14,85 +17,34 @@ export default async function NewProjectPage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
-
-  const [clients, packs] = await Promise.all([
-    prisma.clientProfile.findMany({
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.pack.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
-  ]);
-
-  async function createProject(formData: FormData) {
-    "use server";
-    const admin = await requireRole("ADMIN");
-    if (!admin) return;
-    const title = String(formData.get("title") || "").trim();
-    const description = String(formData.get("description") || "").trim() || null;
-    const clientId = String(formData.get("clientId") || "");
-    const sessionDateRaw = String(formData.get("sessionDate") || "");
-    const packIds = formData.getAll("packIds").map(String);
-    if (!title || !clientId) return;
-
-    const project = await prisma.project.create({
-      data: {
-        title,
-        description,
-        clientId,
-        sessionDate: sessionDateRaw ? new Date(sessionDateRaw) : null,
-        packs: {
-          create: packIds.map((packId) => ({ packId })),
-        },
-      },
-    });
-    redirect(`/${locale}/admin/projects/${project.id}`);
-  }
+  const [clients, packs] = await Promise.all([listClientOptions(), listActivePacks()]);
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
+    <div>
       <section className="mx-auto max-w-3xl px-5 py-14 md:px-8">
-        <p className="section-label">{t("projects")}</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold">{t("projects")}</h1>
-        <h2 className="mt-2 text-xl text-white/70">{t("newProject")}</h2>
-        <form action={createProject} className="mt-8 space-y-5">
+        <PageHeading eyebrow={t("projects")} title={t("newProject")}
+          actions={<ActionLink href={`/${locale}/admin/projects`} secondary>{t("backToProjects")}</ActionLink>} />
+        {clients.length === 0 ? <div className="mt-8">
+          <EmptyState title={t("emptyClients")} description={t("projectNeedsClient")}>
+            <ActionLink href={`/${locale}/admin/clients#new-client`}>{t("newClient")}</ActionLink>
+          </EmptyState>
+        </div> :
+        <ActionForm action={createProjectFromForm.bind(null, locale)} className="ds-card mt-8 p-6">
+          <FormField label={t("title")} name="title" required maxLength={160} />
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
-              {t("title")}
-            </span>
-            <input className="input-field" name="title" required />
+            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("description")}</span>
+            <textarea className="input-field min-h-28" name="description" maxLength={4000} />
           </label>
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
-              {t("description")}
-            </span>
-            <textarea className="input-field min-h-28" name="description" />
-          </label>
-          <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
-              {t("client")}
-            </span>
+            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("client")}</span>
             <select className="input-field" name="clientId" required defaultValue="">
-              <option value="" disabled>
-                —
-              </option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.user.name} • {c.user.email}
-                </option>
-              ))}
+              <option value="" disabled>—</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.user.name} • {c.user.email}</option>)}
             </select>
           </label>
-          <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
-              {t("sessionDate")}
-            </span>
-            <input className="input-field" type="date" name="sessionDate" />
-          </label>
+          <FormField label={t("sessionDate")} type="date" name="sessionDate" />
           <fieldset className="space-y-3">
-            <legend className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
-              {t("packs")}
-            </legend>
+            <legend className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{t("packs")}</legend>
             {packs.map((pack) => (
               <label key={pack.id} className="flex items-center gap-3 text-sm">
                 <input type="checkbox" name="packIds" value={pack.id} className="accent-sand" />
@@ -100,11 +52,9 @@ export default async function NewProjectPage({
               </label>
             ))}
           </fieldset>
-          <button type="submit" className="btn-primary">
-            {t("create")}
-          </button>
-        </form>
+          <Button type="submit">{t("create")}</Button>
+        </ActionForm>}
       </section>
-    </main>
+    </div>
   );
 }

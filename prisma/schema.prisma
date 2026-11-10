@@ -29,19 +29,21 @@ enum OrderStatus {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String
-  role         Role
-  locale       String         @default("es")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  lastTotpStep  Int?
+  name          String
+  role          Role
+  locale        String         @default("es")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   clientProfile ClientProfile?
-  favorites    Favorite[]
-  comments     Comment[]
-  selections   Selection[]
-  orders       Order[]
+  favorites     Favorite[]
+  comments      Comment[]
+  selections    Selection[]
+  orders        Order[]
+  sessions      AuthSession[]
 }
 
 model ClientProfile {
@@ -71,6 +73,7 @@ model Project {
 }
 
 model Photo {
+  trashedAt  DateTime?
   id         String      @id @default(cuid())
   projectId  String
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -84,6 +87,8 @@ model Photo {
   comments   Comment[]
   selections Selection[]
   createdAt  DateTime    @default(now())
+
+  @@index([projectId, trashedAt])
 }
 
 model Favorite {
@@ -155,4 +160,42 @@ model Order {
   pack        Pack        @relation(fields: [packId], references: [id])
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+model AuthSession {
+  tokenHash          String    @id
+  userId             String
+  expiresAt          DateTime
+  adminVerified      Boolean   @default(false)
+  vaultVerifiedUntil DateTime?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+enum PhotoAuditAction {
+  ZIP_REQUESTED
+  PHOTO_DELETED
+  PHOTO_TRASHED
+  PHOTO_RESTORED
+}
+
+model PhotoAuditEvent {
+  id         String           @id @default(cuid())
+  actorId    String
+  projectId  String
+  photoId    String?
+  photoCount Int
+  action     PhotoAuditAction
+  createdAt  DateTime         @default(now())
+
+  @@index([projectId, createdAt])
 }

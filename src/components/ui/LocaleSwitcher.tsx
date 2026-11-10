@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 
 const locales = ["es", "en", "fr"] as const;
 
-export function LocaleSwitcher({ current }: { current: string }) {
+export function LocaleSwitcher({
+  current,
+  appearance = "dark",
+}: {
+  current: string;
+  appearance?: "dark" | "light";
+}) {
   const pathname = usePathname();
   const rest = pathname.replace(/^\/(es|en|fr)/, "") || "";
 
@@ -19,8 +25,12 @@ export function LocaleSwitcher({ current }: { current: string }) {
             href={`/${locale}${rest}`}
             className={`px-2 py-1 uppercase transition ${
               active
-                ? "border border-white/70 text-white"
-                : "text-white/50 hover:text-white"
+                ? appearance === "light"
+                  ? "border border-black/40 text-ink"
+                  : "border border-white/70 text-white"
+                : appearance === "light"
+                  ? "text-black/50 hover:text-black"
+                  : "text-white/50 hover:text-white"
             }`}
           >
             {locale}

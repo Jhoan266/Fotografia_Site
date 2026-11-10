@@ -1,10 +1,10 @@
+import { ActionForm } from "@/components/admin/ActionForm";
+import { Button, EmptyState, FormField } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/ui/AppHeader";
-import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
 import { requireRole } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { createClientFromForm } from "@/modules/clients/actions";
+import { listClientsForAdmin } from "@/modules/clients/queries";
 
 export default async function AdminClientsPage({
   params,
@@ -16,49 +16,29 @@ export default async function AdminClientsPage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
-
-  const clients = await prisma.clientProfile.findMany({
-    include: { user: true, _count: { select: { projects: true } } },
-    orderBy: { createdAt: "desc" },
-  });
-
-  async function createClient(formData: FormData) {
-    "use server";
-    const admin = await requireRole("ADMIN");
-    if (!admin) return;
-
-    const name = String(formData.get("name") || "").trim();
-    const email = String(formData.get("email") || "").trim().toLowerCase();
-    const phone = String(formData.get("phone") || "").trim() || null;
-    const notes = String(formData.get("notes") || "").trim() || null;
-    const password = String(formData.get("password") || "Demo1234!");
-    if (!name || !email) return;
-
-    const passwordHash = await hashPassword(password);
-    await prisma.user.create({
-      data: {
-        email,
-        name,
-        passwordHash,
-        role: "CLIENT",
-        clientProfile: { create: { phone, notes } },
-      },
-    });
-    revalidatePath(`/${locale}/admin/clients`);
-  }
+  const clients = await listClientsForAdmin();
 
   return (
-    <main>
-      <AppHeader locale={locale} user={user} mode="admin" />
-      <section className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-[1fr_1.1fr] md:px-8">
+    <div>
+      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:px-8">
         <div>
           <p className="section-label">{t("clients")}</p>
-          <h1 className="mt-3 font-display text-4xl font-semibold">{t("clients")}</h1>
-          <ul className="mt-8 space-y-4">
+          <h1 className="mt-3 font-display text-4xl font-semibold">
+            {t("clients")}
+          </h1>
+          <div className="mt-8">
+            {clients.length === 0 && (
+              <EmptyState
+                title={t("emptyClients")}
+                description={t("emptyClientsDescription")}
+              />
+            )}
+          </div>
+          <ul className="mt-4 space-y-4">
             {clients.map((c) => (
               <li key={c.id} className="border-b border-white/10 pb-4">
-                <p className="text-lg">{c.user.name}</p>
-                <p className="text-sm text-white/55">
+                <p className="break-words text-lg">{c.user.name}</p>
+                <p className="break-words text-sm leading-relaxed text-white/55">
                   {c.user.email}
                   {c.phone ? ` · ${c.phone}` : ""}
                 </p>
@@ -69,50 +49,43 @@ export default async function AdminClientsPage({
             ))}
           </ul>
         </div>
-        <form action={createClient} className="space-y-4 border border-white/10 p-6">
+        <ActionForm
+          id="new-client"
+          action={createClientFromForm.bind(null, locale)}
+          className="ds-card scroll-mt-6 space-y-4 p-6"
+        >
           <h2 className="font-display text-2xl">{t("newClient")}</h2>
-          <Field label={t("name")} name="name" required />
-          <Field label={t("email")} name="email" type="email" required />
-          <Field label={t("phone")} name="phone" />
-          <Field label={t("password")} name="password" placeholder="Demo1234!" />
+          <FormField label={t("name")} name="name" required maxLength={120} />
+          <FormField
+            label={t("email")}
+            name="email"
+            type="email"
+            required
+            maxLength={254}
+          />
+          <FormField label={t("phone")} name="phone" maxLength={40} />
+          <FormField
+            label={t("password")}
+            name="password"
+            type="password"
+            required
+            minLength={12}
+            maxLength={128}
+            autoComplete="new-password"
+          />
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("notes")}
             </span>
-            <textarea name="notes" className="input-field min-h-24" />
+            <textarea
+              name="notes"
+              maxLength={2000}
+              className="input-field min-h-24"
+            />
           </label>
-          <button type="submit" className="btn-primary">
-            {t("create")}
-          </button>
-        </form>
+          <Button type="submit">{t("create")}</Button>
+        </ActionForm>
       </section>
-    </main>
-  );
-}
-
-function Field({
-  label,
-  name,
-  type = "text",
-  required,
-  placeholder,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">{label}</span>
-      <input
-        className="input-field"
-        name={name}
-        type={type}
-        required={required}
-        placeholder={placeholder}
-      />
-    </label>
+    </div>
   );
 }

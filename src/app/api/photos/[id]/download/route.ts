@@ -1,41 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { readStoredFile } from "@/lib/storage";
-import path from "path";
+import { contentDispositionAttachment } from "@/lib/security";
+import { getAccessiblePhoto } from "@/modules/photos/access";
+
+import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session.user) {
+  const user = await requireUser();
+  if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+
   const { id } = await context.params;
-  const photo = await prisma.photo.findUnique({
-    where: { id },
-    include: { project: { include: { client: true } } },
-  });
+  const photo = await getAccessiblePhoto(user, id);
   if (!photo) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  if (
-    session.user.role === "CLIENT" &&
-    (photo.project.client.userId !== session.user.id ||
-      photo.project.status !== "DELIVERED")
-  ) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
 
-  const data = await readStoredFile(photo.storageKey);
-  const filename = photo.filename || path.basename(photo.storageKey);
-  return new NextResponse(new Uint8Array(data), {
-    headers: {
-      "Content-Type": "application/octet-stream",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+  try {
+    const delivered = user.role === "CLIENT" ? await readDeliveryPhoto(photo.storageKey, request.signal) : null;
+    const data = delivered?.data ?? await readStoredFile(photo.storageKey);
+    return new NextResponse(new Uint8Array(data), {
+      headers: {
+        "Content-Type": delivered ? `image/${delivered.format}` : "application/octet-stream",
+        "Content-Disposition": contentDispositionAttachment(photo.filename),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    if (error instanceof DeliveryBusy) return NextResponse.json({ error: "delivery_busy" }, { status: 429 });
+    return NextResponse.json({ error: "missing_file" }, { status: 404 });
+  }
 }
