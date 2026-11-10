@@ -8,9 +8,9 @@ export type StorageObject = {
 export interface StorageProvider {
   put(key: string, data: Buffer): Promise<StorageObject>;
   get(key: string): Promise<Buffer>;
-  exists(key: string): Promise<boolean>;
+  size(key: string, signal?: AbortSignal): Promise<number | null>;
   delete(key: string): Promise<void>;
-  openReadStream(key: string): Promise<Readable> | Readable;
+  openReadStream(key: string, signal?: AbortSignal): Promise<Readable> | Readable;
 }
 
 export type StoredPhoto = {

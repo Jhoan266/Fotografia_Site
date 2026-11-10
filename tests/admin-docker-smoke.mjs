@@ -298,6 +298,25 @@ async function login(email, totp) {
     console.log('PASS trash access isolation, filtered galleries and ZIPs, concurrent restore, preserved original and audit records');
   }
 
+  const fixtureKey = 'originals/zip-limit-fixture.jpg';
+  await prisma.photo.createMany({
+    data: Array.from({ length: 501 }, (_, i) => ({
+      projectId, storageKey: fixtureKey, filename: `limit-${i}.jpg`, sortOrder: 1000 + i,
+    })),
+  });
+  try {
+    const previousAuditCount = await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } });
+    assert.equal((await exportRequest()).status, 413);
+    assert.equal((await page(adminZip, client)).r.status, 413);
+    assert.equal(await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } }), previousAuditCount);
+  } finally {
+    await prisma.photo.deleteMany({ where: { projectId, storageKey: fixtureKey } });
+  }
+  const nextExport = await exportRequest();
+  assert.equal(nextExport.status, 200);
+  await nextExport.arrayBuffer();
+  console.log('PASS ZIP photo count limit for both roles and slot release after rejection');
+
   const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
   assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);
