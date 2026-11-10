@@ -43,6 +43,7 @@ export default async function AdminLayout({
             overview: t("studio.overview"),
             projects: t("projects"),
             clients: t("clients"),
+            vault: t("vault.title"),
           }}
         />
         <div className="studio-sidebar-bottom">

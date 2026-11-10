@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
 
 export async function POST(request: NextRequest) {
-  const session = await getSession();
-  if (!session.user || session.user.role !== "ADMIN") {
+  const user = await requireUser();
+  if (!user || user.role !== "ADMIN") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!hasValidSameOrigin(request)) {

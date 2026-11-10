@@ -46,7 +46,7 @@ async function login(email) {
   const admin=await login(`${tag}-admin@example.invalid`);
   const client=await login(`${tag}-client@example.invalid`);
   for(const locale of ['es','en','fr']) {
-   for(const route of ['admin','admin/clients','admin/projects/new']) {
+   for(const route of ['admin','admin/clients','admin/projects/new','admin/vault']) {
     for(const cookie of ['',client]) {
      const {r}=await page(`/${locale}/${route}`,cookie);
      assert.equal(r.status,307);assert.equal(new URL(r.headers.get('location'),base).pathname,`/${locale}/${cookie ? "app" : "login"}`);
@@ -80,6 +80,14 @@ async function login(email) {
   }
   console.log('PASS private client portal delivered-only sessions in ES/EN/FR');
 
+  const vault = await page(`/es/admin/vault?client=${profile.id}`, admin);
+  assert.equal(vault.r.status, 200);
+  assert(vault.html.includes(projects[0].title));
+  const folder = await page(`/es/admin/vault?client=${profile.id}&project=${projects[0].id}`, admin);
+  assert.equal(folder.r.status, 200);
+  assert(folder.html.includes(projects[0].title));
+  const mismatch = await page(`/es/admin/vault?client=${profile.id}&project=missing`, admin);
+  assert.equal(mismatch.r.status, 404);
   const {r:denied}=await page('/api/photos/'+projects[0].id+'/download',client);
   assert([403,404].includes(denied.status));
   const image=await sharp({create:{width:8,height:8,channels:3,background:'#c5a37d'}}).jpeg().toBuffer();
@@ -89,7 +97,14 @@ async function login(email) {
   const photoId=upload.ids[0];
   try {
     const photo=await prisma.photo.findUnique({where:{id:photoId}});assert(photo?.thumbKey);
-    r=await fetch(base+'/api/media/'+photo.thumbKey,{headers:{cookie:admin}});assert.equal(r.status,200);assert(r.headers.get('content-type').startsWith('image/'));
+    r=await fetch(base+'/api/media/'+photo.thumbKey,{headers:{cookie:admin}});assert.equal(r.status,200);assert(r.headers.get('content-type').startsWith('image/'));assert(r.headers.get('cache-control').includes('no-store'));
+    await prisma.user.update({where:{id:ids[0]},data:{role:'CLIENT'}});
+    try {
+      const revoked = await page('/api/media/'+photo.thumbKey,admin);
+      assert.equal(revoked.r.status,401);
+    } finally {
+      await prisma.user.update({where:{id:ids[0]},data:{role:'ADMIN'}});
+    }
     r=await fetch(base+'/api/photos/reorder',{method:'POST',headers:{cookie:admin,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({projectId:projects[0].id,photoIds:[...upload.ids].reverse()})});assert.equal(r.status,200);
     console.log('PASS upload, stored thumbnail delivery and photo reorder');
     const photoPath=`/api/photos/${photoId}`;

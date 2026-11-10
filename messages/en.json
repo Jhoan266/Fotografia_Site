@@ -301,6 +301,14 @@
       "yourWebsite": "Your window to the world",
       "websiteDescription": "Visit your public website and portfolio.",
       "footer": "Made to keep your focus on what matters."
+    },
+    "vault": {
+      "title": "Photo vault",
+      "private": "Private photographer access",
+      "intro": "Choose a client folder and open a project to manage its photos.",
+      "folders": "All folders",
+      "empty": "This folder is empty.",
+      "download": "Download original"
     }
   }
 }

@@ -301,6 +301,14 @@
       "yourWebsite": "Tu escaparate al mundo",
       "websiteDescription": "Visita tu web y tu portafolio público.",
       "footer": "Hecho para centrarte en lo que importa."
+    },
+    "vault": {
+      "title": "Bóveda de fotos",
+      "private": "Acceso privado del fotógrafo",
+      "intro": "Elige una carpeta de cliente y abre un proyecto para gestionar sus fotos.",
+      "folders": "Todas las carpetas",
+      "empty": "Esta carpeta todavía está vacía.",
+      "download": "Descargar original"
     }
   }
 }
