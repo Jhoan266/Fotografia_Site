@@ -94,9 +94,11 @@
     "title": "Accès privé",
     "subtitle": "Connectez-vous pour voir vos séances livrées.",
     "email": "Email",
+    "totp": "Code de vérification",
+    "totpHelp": "Réservé aux administrateurs. Saisissez le code de votre application d’authentification.",
     "password": "Mot de passe",
     "submit": "Entrer",
-    "errorInvalid": "Email ou mot de passe incorrect.",
+    "errorInvalid": "Vérifiez vos identifiants et, si vous êtes administrateur, votre code de vérification.",
     "errorMissing": "Entrez email et mot de passe.",
     "errorRate": "Trop de tentatives. Attendez une minute."
   },

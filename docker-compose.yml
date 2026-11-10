@@ -22,6 +22,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-fotografia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fotografia}?schema=public
+      ADMIN_TOTP_SECRETS: ${ADMIN_TOTP_SECRETS:-}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}

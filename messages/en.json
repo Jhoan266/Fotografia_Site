@@ -94,9 +94,11 @@
     "title": "Private access",
     "subtitle": "Sign in to see your delivered sessions.",
     "email": "Email",
+    "totp": "Verification code",
+    "totpHelp": "Administrators only. Enter the code from your authenticator app.",
     "password": "Password",
     "submit": "Sign in",
-    "errorInvalid": "Incorrect email or password.",
+    "errorInvalid": "Check your sign-in details and, if you are an administrator, your verification code.",
     "errorMissing": "Enter email and password.",
     "errorRate": "Too many attempts. Wait a minute."
   },
