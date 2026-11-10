@@ -149,7 +149,7 @@ async function login(email, totp) {
   const deleteRequest = (origin) => fetch(base + deletePath, {
     method: 'DELETE', headers: { cookie: admin, ...(origin ? { Origin: origin } : {}) },
   });
-  try {
+  {
     assert.equal((await exportRequest()).status, 403);
     assert.equal((await deleteRequest(base)).status, 403);
     await verify(password + 'wrong');
@@ -210,20 +210,69 @@ async function login(email, totp) {
     }
     console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
 
-  } finally {
-    for(const uploadedId of upload.ids) {
-      r=await fetch(base+`/api/photos/${uploadedId}/delete`,{method:'DELETE',headers:{cookie:admin,Origin:base}});assert.equal(r.status,200);assert.equal((await r.json()).orphanedObjects,0);
+    const restorePath = `/api/photos/${photoId}/restore`;
+    const restore = (cookie, origin = base) => fetch(base + restorePath, {
+      method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
+    });
+    assert.equal((await deleteRequest(base)).status, 200);
+    assert.equal((await deleteRequest(base)).status, 404);
+    assert((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt);
+    assert.equal((await restore(client)).status, 401);
+    assert.equal((await restore(admin, null)).status, 403);
+    assert.equal((await restore(admin, 'https://untrusted.invalid')).status, 403);
+    for (const cookie of [client, admin]) {
+      assert.equal((await page('/api/media/' + photo.thumbKey, cookie)).r.status, 404);
+      assert.equal((await page('/api/media/' + photo.storageKey, cookie)).r.status, 404);
+      const download = await page(photoPath + '/download', cookie);
+      assert([403,404].includes(download.r.status));
     }
+    for (const operation of ['favorite', 'select', 'comment']) {
+      const response = await fetch(base + photoPath + '/' + operation, {
+        method: 'POST', headers: jsonHeaders, body: JSON.stringify({ body: 'Hidden photo' }),
+      });
+      assert([403,404].includes(response.status));
+    }
+    const orderWithTrashedPhoto = await fetch(base + '/api/photos/reorder', {
+      method: 'POST', headers: { cookie: admin, Origin: base, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId, photoIds: upload.ids }),
+    });
+    assert.equal(orderWithTrashedPhoto.status, 400);
+    const hiddenGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert(!hiddenGallery.html.includes(photoId));
+    const trashPage = await page(`/es/admin/vault?client=${profile.id}&project=${projectId}`, admin);
+    assert(trashPage.html.includes('Papelera') && trashPage.html.includes('Restaurar'));
+    assert(!trashPage.html.includes(photo.thumbKey));
+    for (const archive of [
+      await exportRequest(),
+      await fetch(base + adminZip, { headers: { cookie: client } }),
+    ]) {
+      assert.equal(archive.status, 200);
+      const bytes = Buffer.from(await archive.arrayBuffer());
+      assert.equal(bytes.readUInt16LE(bytes.length - 12), 1);
+    }
+    await prisma.authSession.updateMany({
+      where: { userId: ids[0] }, data: { vaultVerifiedUntil: new Date(0) },
+    });
+    assert.equal((await restore(admin)).status, 403);
+    await verify(password);
+    const attempts = await Promise.all([restore(admin), restore(admin)]);
+    assert.deepEqual(attempts.map(response => response.status).sort(), [200, 404]);
+    assert.equal((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt, null);
+    const restored = await fetch(base + photoPath + '/download', { headers: { cookie: client } });
+    assert.equal(restored.status, 200);
+    assert.deepEqual(Buffer.from(await restored.arrayBuffer()), image);
+    const restoredGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert(restoredGallery.html.includes('Comment from client'));
+    const audit = await prisma.photoAuditEvent.findMany({ where: { actorId: ids[0], projectId } });
+    assert.deepEqual(audit.filter(event => event.action === 'ZIP_REQUESTED').map(event => event.photoCount).sort(), [1, 2]);
+    for (const action of ['PHOTO_TRASHED', 'PHOTO_RESTORED']) {
+      const events = audit.filter(event => event.action === action);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].photoId, photoId);
+      assert.equal(events[0].photoCount, 1);
+    }
+    console.log('PASS trash access isolation, filtered galleries and ZIPs, concurrent restore, preserved original and audit records');
   }
-  assert.equal(await prisma.photo.count({where:{projectId:projects[0].id}}),0);
-  const audit = await prisma.photoAuditEvent.findMany({ where: { actorId: ids[0], projectId } });
-  assert.equal(audit.length, 3);
-  assert.equal(audit.find(event => event.action === 'ZIP_REQUESTED')?.photoCount, 2);
-  assert.deepEqual(
-    audit.filter(event => event.action === 'PHOTO_DELETED' && event.photoCount === 1).map(event => event.photoId).sort(),
-    [...upload.ids].sort(),
-  );
-  console.log('PASS photo deletion, audit actor/project/photo/count and ZIP request tracking');
 
   const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
   assert.equal((await exportRequest(secondAdmin)).status, 403);

@@ -1,10 +1,10 @@
 import { ActionLink, Button, PageHeading, StatusBadge } from "@/components/ui/design-system";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { notFound, redirect } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
-import { requireRole } from "@/lib/session";
+import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { publishProject } from "@/modules/projects/actions";
 import { getProjectForAdmin } from "@/modules/projects/queries";
 
@@ -15,11 +15,16 @@ export default async function AdminProjectDetailPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  const user = await requireRole("ADMIN");
-  if (!user) redirect(`/${locale}/login`);
+  const session = await getAuthenticatedSession();
+  if (session?.user.role !== "ADMIN") redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
   const project = await getProjectForAdmin(id);
   if (!project) notFound();
+  const format = await getFormatter();
+  const activePhotos = project.photos.filter((photo) => photo.trashedAt === null);
+  const trashedPhotos = project.photos.flatMap(({ id, filename, trashedAt }) => trashedAt ? [
+    { id, filename, trashedAt: format.dateTime(trashedAt, { dateStyle: "medium" }) },
+  ] : []);
 
   return (
     <div>
@@ -43,12 +48,14 @@ export default async function AdminProjectDetailPage({
         </div>
 
         <div className="ds-card mt-8 p-5 md:p-6">
-          <h2 className="font-display text-2xl">{t("photos")} ({project.photos.length})</h2>
+          <h2 className="font-display text-2xl">{t("photos")} ({activePhotos.length})</h2>
           <div className="mt-4">
             <AdminPhotoManager
               projectId={project.id}
-              deleteLabel={t("deletePhoto")}
-              initialPhotos={project.photos.map((photo) => ({
+              key={JSON.stringify([activePhotos.map((photo) => photo.id), trashedPhotos.map((photo) => photo.id)])}
+              trashedPhotos={trashedPhotos}
+              initialVerifiedUntil={hasRecentVaultVerification(session) ? session.vaultVerifiedUntil!.getTime() : 0}
+              initialPhotos={activePhotos.map((photo) => ({
                 id: photo.id,
                 filename: photo.filename,
                 thumbUrl: `/api/media/${photo.thumbKey || photo.storageKey}`,

@@ -1,4 +1,13 @@
 {
+  "photoTrash": {
+    "title": "Corbeille",
+    "move": "Mettre à la corbeille",
+    "restore": "Restaurer",
+    "confirm": "Mettre cette photo à la corbeille ? Vous pourrez la restaurer ensuite.",
+    "movedAt": "Dans la corbeille depuis le {date}",
+    "help": "Confirmez votre mot de passe pour exporter le ZIP, mettre des photos à la corbeille ou les restaurer. La vérification dure cinq minutes.",
+    "error": "La photo n’a pas pu être mise à jour. Actualisez la page et réessayez."
+  },
   "vaultVerification": {
     "help": "Confirmez votre mot de passe pour exporter le ZIP ou supprimer des photos. La vérification dure cinq minutes.",
     "password": "Mot de passe actuel",

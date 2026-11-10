@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   const existing = await prisma.photo.findMany({
-    where: { projectId },
+    where: { projectId, trashedAt: null },
     select: { id: true },
     orderBy: { sortOrder: "asc" },
   });
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   await prisma.$transaction(
     photoIds.map((id, sortOrder) =>
       prisma.photo.update({
-        where: { id },
+        where: { id, trashedAt: null },
         data: { sortOrder },
       }),
     ),

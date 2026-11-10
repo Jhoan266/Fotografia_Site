@@ -21,7 +21,7 @@ export async function getAdminDashboard() {
   ] = await prisma.$transaction([
     prisma.clientProfile.count(),
     prisma.project.count(),
-    prisma.photo.count(),
+    prisma.photo.count({ where: { trashedAt: null } }),
     prisma.project.count({ where: { status: "DRAFT" } }),
     prisma.project.count({ where: { status: "DELIVERED" } }),
     prisma.project.count({ where: { status: "ARCHIVED" } }),
@@ -34,8 +34,9 @@ export async function getAdminDashboard() {
         status: true,
         sessionDate: true,
         client: { select: { user: { select: { name: true } } } },
-        _count: { select: { photos: true } },
+        _count: { select: { photos: { where: { trashedAt: null } } } },
         photos: {
+          where: { trashedAt: null },
           take: 1,
           orderBy: { sortOrder: "asc" },
           select: { thumbKey: true, storageKey: true },
@@ -49,7 +50,7 @@ export async function getAdminDashboard() {
       select: {
         id: true,
         title: true,
-        _count: { select: { photos: true } },
+        _count: { select: { photos: { where: { trashedAt: null } } } },
         client: { select: { user: { select: { name: true } } } },
       },
     }),
@@ -64,9 +65,9 @@ export async function getAdminDashboard() {
         client: { select: { user: { select: { name: true } } } },
       },
     }),
-    prisma.favorite.count(),
-    prisma.selection.count({ where: { status: "SELECTED" } }),
-    prisma.comment.count(),
+    prisma.favorite.count({ where: { photo: { trashedAt: null } } }),
+    prisma.selection.count({ where: { status: "SELECTED", photo: { trashedAt: null } } }),
+    prisma.comment.count({ where: { photo: { trashedAt: null } } }),
   ]);
   return {
     clients,

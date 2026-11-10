@@ -14,19 +14,22 @@ type AdminPhoto = {
 export function AdminPhotoManager({
   projectId,
   initialPhotos,
-  deleteLabel,
+  trashedPhotos,
+  initialVerifiedUntil,
   downloadLabel,
 }: {
   projectId: string;
   initialPhotos: AdminPhoto[];
-  deleteLabel: string;
+  trashedPhotos: { id: string; filename: string; trashedAt: string }[];
+  initialVerifiedUntil: number;
   downloadLabel?: string;
 }) {
   const router = useRouter();
   const t = useTranslations("vaultVerification");
-  const [verifiedUntil, verify, verifying] = useActionState(verifyVault, 0);
+  const trashLabels = useTranslations("photoTrash");
+  const [verifiedUntil, verify, verifying] = useActionState(verifyVault, initialVerifiedUntil);
   const [expiredVerification, setExpiredVerification] = useState(0);
-  const [deleteError, setDeleteError] = useState(false);
+  const [trashError, setTrashError] = useState(false);
   const verified = verifiedUntil !== null && verifiedUntil > expiredVerification;
 
   useEffect(() => {
@@ -68,24 +71,23 @@ export function AdminPhotoManager({
     void persistOrder(next);
   }
 
-  async function remove(photoId: string) {
-    if (busyId || !verified || !window.confirm(t("confirmDelete"))) return;
-    setDeleteError(false);
+  async function changeTrash(photoId: string, trash: boolean) {
+    if (busyId || !verified || (trash && !window.confirm(trashLabels("confirm")))) return;
+    setTrashError(false);
     setBusyId(photoId);
 
     try {
-      const response = await fetch(`/api/photos/${photoId}/delete`, {
-        method: "DELETE",
+      const response = await fetch(`/api/photos/${encodeURIComponent(photoId)}/${trash ? "delete" : "restore"}`, {
+        method: trash ? "DELETE" : "POST",
       });
       if (!response.ok) {
         if (response.status === 403 && verifiedUntil) setExpiredVerification(verifiedUntil);
-        setDeleteError(true);
+        setTrashError(true);
         return;
       }
-      setPhotos((current) => current.filter((photo) => photo.id !== photoId));
       router.refresh();
     } catch {
-      setDeleteError(true);
+      setTrashError(true);
     } finally {
       setBusyId(null);
     }
@@ -93,13 +95,13 @@ export function AdminPhotoManager({
 
   return (
     <div className="space-y-4">
-      {photos.length > 0 && (verified ? (
+      {(photos.length > 0 || trashedPhotos.length > 0) && (verified ? (photos.length > 0 && (
         <form method="post" action={`/api/photos/download-zip?projectId=${encodeURIComponent(projectId)}`}>
           <button type="submit" className="btn-ghost">{t("export")}</button>
         </form>
-      ) : (
+      )) : (
         <form id={`vault-verify-${projectId}`} action={verify} className="space-y-2">
-          <p className="text-sm text-white/65">{t("help")}</p>
+          <p className="text-sm text-white/65">{trashLabels("help")}</p>
           <div className="flex flex-wrap items-end gap-2">
             <label className="block space-y-1">
               <span className="text-sm">{t("password")}</span>
@@ -110,7 +112,7 @@ export function AdminPhotoManager({
           {verifiedUntil === null && <p role="alert" className="text-sm text-red-300">{t("invalid")}</p>}
         </form>
       ))}
-      {deleteError && <p role="alert" className="text-sm text-red-300">{t("deleteError")}</p>}
+      {trashError && <p role="alert" className="text-sm text-red-300">{trashLabels("error")}</p>}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {photos.map((photo, index) => (
           <article key={photo.id} className="group overflow-hidden border border-white/10 bg-ink-soft">
@@ -152,14 +154,31 @@ export function AdminPhotoManager({
                 type="button"
                 className="text-xs text-red-300 transition hover:text-red-200 disabled:opacity-50"
                 disabled={!verified || busyId !== null}
-                onClick={() => void remove(photo.id)}
+                onClick={() => void changeTrash(photo.id, true)}
               >
-                {busyId === photo.id ? "…" : deleteLabel}
+                {busyId === photo.id ? "…" : trashLabels("move")}
               </button>
             </div>
           </article>
         ))}
       </div>
+      {trashedPhotos.length > 0 && (
+        <section className="space-y-3 border-t border-white/10 pt-4">
+          <h3 className="font-display text-lg">{trashLabels("title")} ({trashedPhotos.length})</h3>
+          <ul className="space-y-2">
+            {trashedPhotos.map((photo) => (
+              <li key={photo.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 break-all text-sm">{photo.filename}</span>
+                <span className="text-xs text-white/65">{trashLabels("movedAt", { date: photo.trashedAt })}</span>
+                <button type="button" className="btn-ghost" disabled={!verified || busyId !== null}
+                  onClick={() => void changeTrash(photo.id, false)}>
+                  {busyId === photo.id ? "…" : trashLabels("restore")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

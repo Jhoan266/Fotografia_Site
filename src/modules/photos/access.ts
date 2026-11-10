@@ -8,7 +8,7 @@ export type AccessUser = {
 
 export async function getAccessiblePhoto(user: AccessUser, photoId: string) {
   const photo = await prisma.photo.findUnique({
-    where: { id: photoId },
+    where: { id: photoId, trashedAt: null },
     include: {
       project: {
         include: {
@@ -30,7 +30,7 @@ export async function getAccessiblePhoto(user: AccessUser, photoId: string) {
 
 export async function assertPhotoExists(photoId: string) {
   return prisma.photo.findUnique({
-    where: { id: photoId },
+    where: { id: photoId, trashedAt: null },
     select: { id: true },
   });
 }
