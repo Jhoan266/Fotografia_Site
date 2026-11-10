@@ -130,3 +130,19 @@ Deten ambos contenedores y elimina la variable al terminar. El test guarda
 un original y una miniatura ficticios en un directorio temporal, comprueba
 que ya no existan en el origen y los recupera en el destino usando sus claves
 originales. Este simulacro cubre dos objetos y no enumera un bucket completo.
+
+### Simulacro de bucket completo
+
+Desde PowerShell, ejecuta `./tests/s3-bucket-restore.ps1`. El simulacro usa
+imágenes fijadas por su digest, una red interna de Docker, dos servidores
+SeaweedFS y un volumen intermedio que se retira al finalizar. Los tres objetos
+ficticios incluyen originales, una miniatura y un nombre con espacios.
+
+El origen se detiene antes de restaurar. Se comparan las claves del destino
+con el inventario esperado y se verifica el contenido descargado con
+`rclone check --download` antes y después de restaurar.
+
+El alcance son las claves y los bytes de los objetos vigentes. Las versiones
+históricas, políticas de acceso, cifrado del proveedor y restauración de
+PostgreSQL en el mismo punto de corte deben verificarse por separado con el
+proveedor de producción.
