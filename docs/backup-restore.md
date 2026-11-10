@@ -84,3 +84,40 @@ python3 scripts/backup-retention.py /ruta/cifrada/copias --keep 5 --days 30
 Agrega `--apply` solo cuando hayas revisado la lista. Los valores del ejemplo
 son ilustrativos. El comando no programa ejecuciones ni aplica una politica
 al almacenamiento S3.
+
+### Prueba de integracion S3 local
+
+El test comprueba el proveedor y el ZIP contra un servidor S3 compatible.
+Usa un bucket temporal, credenciales ficticias y un puerto de loopback.
+El procedimiento de copia y restauracion remota se valida por separado.
+
+```powershell
+$name = 'fotografia-s3-qa'
+$secret = 'fotografia-qa-local-only'
+$image = 'chrislusf/seaweedfs@sha256:ccad23e18639c8b98cee17e7100b95830a06077b56d8e5b006d6dcf8ec5e94a0'
+docker run -d --rm --name $name -p 127.0.0.1::8333 -e AWS_ACCESS_KEY_ID=fotografia-qa -e "AWS_SECRET_ACCESS_KEY=$secret" -e S3_BUCKET=fotografia-qa $image mini -dir=/data
+if ($LASTEXITCODE -ne 0) { throw 'Could not start S3 test container' }
+try {
+  $endpoint = 'http://' + (docker port $name 8333/tcp)
+  $ready = $false
+  for ($i = 0; $i -lt 20; $i++) {
+    curl.exe -s -o NUL $endpoint
+    if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+    Start-Sleep -Seconds 1
+  }
+  if (!$ready) { throw 'S3 test container did not become ready' }
+  # The test is intended for a new PowerShell session with no production credentials.
+  $env:ALLOW_LOCAL_S3_TEST = '1'
+  $env:S3_ENDPOINT = $endpoint
+  $env:S3_BUCKET = 'fotografia-qa'
+  $env:S3_REGION = 'us-east-1'
+  $env:S3_ACCESS_KEY = 'fotografia-qa'
+  $env:S3_SECRET_KEY = $secret
+  $env:S3_FORCE_PATH_STYLE = 'true'
+  npx.cmd tsx --test tests/s3-storage.integration.test.ts
+  if ($LASTEXITCODE -ne 0) { throw 'S3 integration test failed' }
+} finally {
+  docker stop $name
+  Remove-Item Env:ALLOW_LOCAL_S3_TEST,Env:S3_ENDPOINT,Env:S3_BUCKET,Env:S3_REGION,Env:S3_ACCESS_KEY,Env:S3_SECRET_KEY,Env:S3_FORCE_PATH_STYLE -ErrorAction SilentlyContinue
+}
+```
