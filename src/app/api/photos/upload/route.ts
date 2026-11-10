@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { savePhoto } from "@/lib/storage";
+import { removePhotoFiles, savePhoto } from "@/modules/storage/photo-storage";
+import { readUploadForm, UploadBodyTimedOut, UploadBodyTooLarge } from "@/modules/photos/upload-body";
 import {
   hasValidSameOrigin,
   isAllowedImageType,
@@ -13,22 +14,46 @@ import {
 
 export const runtime = "nodejs";
 
+let uploadInProgress = false;
+
 export async function POST(request: NextRequest) {
   const user = await requireUser();
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  if (!hasValidSameOrigin(request)) {
+  if (!request.headers.has("origin") || !hasValidSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
   }
 
-  const contentLength = Number(request.headers.get("content-length") || "0");
-  if (contentLength && contentLength > MAX_UPLOAD_REQUEST_BYTES) {
-    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  if (uploadInProgress) {
+    return NextResponse.json({ error: "upload_busy" }, {
+      status: 429,
+      headers: { "Retry-After": "5" },
+    });
   }
 
-  const form = await request.formData();
+  uploadInProgress = true;
+  try {
+    return await processUpload(request);
+  } finally {
+    uploadInProgress = false;
+  }
+}
+
+async function processUpload(request: Request) {
+  let form: FormData;
+  try {
+    form = await readUploadForm(request, MAX_UPLOAD_REQUEST_BYTES);
+  } catch (error) {
+    if (error instanceof UploadBodyTooLarge) {
+      return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+    }
+    if (error instanceof UploadBodyTimedOut) {
+      return NextResponse.json({ error: "upload_timeout" }, { status: 408 });
+    }
+    return NextResponse.json({ error: "invalid_form" }, { status: 400 });
+  }
   const projectId = String(form.get("projectId") || "").trim();
   if (!projectId || projectId.length > 128) {
     return NextResponse.json({ error: "missing_project" }, { status: 400 });
@@ -56,32 +81,27 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { _max } = await prisma.photo.aggregate({ where: { projectId }, _max: { sortOrder: true } });
-  const existing = (_max.sortOrder ?? -1) + 1;
-  let order = existing;
-  const created: string[] = [];
-
+  const staged: (Awaited<ReturnType<typeof savePhoto>> & { filename: string })[] = [];
   try {
     for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const stored = await savePhoto(buffer);
-      const photo = await prisma.photo.create({
-        data: {
-          projectId,
-          storageKey: stored.storageKey,
-          thumbKey: stored.thumbKey,
-          filename: sanitizeFilename(file.name),
-          width: stored.width,
-          height: stored.height,
-          sortOrder: order++,
-        },
-      });
-      created.push(photo.id);
+      const stored = await savePhoto(Buffer.from(await file.arrayBuffer()));
+      staged.push({ ...stored, filename: sanitizeFilename(file.name) });
     }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const { _max } = await tx.photo.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+      const start = (_max.sortOrder ?? -1) + 1;
+      return tx.photo.createManyAndReturn({
+        data: staged.map((photo, index) => ({ ...photo, projectId, sortOrder: start + index })),
+        select: { id: true, sortOrder: true },
+      });
+    });
+
+    const ids = created.sort((a, b) => a.sortOrder - b.sortOrder).map((photo) => photo.id);
+    return NextResponse.json({ count: ids.length, ids });
   } catch (error) {
+    await removePhotoFiles(staged.flatMap(({ storageKey, thumbKey }) => [storageKey, thumbKey]));
     console.error("Photo upload failed", error);
     return NextResponse.json({ error: "invalid_image" }, { status: 400 });
   }
-
-  return NextResponse.json({ count: created.length, ids: created });
 }

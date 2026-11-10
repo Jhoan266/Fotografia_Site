@@ -1,5 +1,6 @@
 // Run against an isolated local Docker web service configured with the dedicated MFA fixture.
 import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
 import { createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -131,6 +132,29 @@ async function login(email, totp) {
   assert([403,404].includes(denied.status));
   const image=await sharp({create:{width:8,height:8,channels:3,background:'#c5a37d'}}).jpeg().toBuffer();
   const body=new FormData();body.set('projectId',projects[0].id);body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));
+  const uploadForm = (files) => {
+    const form = new FormData();
+    form.set('projectId', projects[0].id);
+    for (const file of files) form.append('files', file);
+    return fetch(base + '/api/photos/upload', { method: 'POST', headers: { cookie: admin, Origin: base }, body: form });
+  };
+  const uploadFile = (data, name = 'qa-limit.jpg') => new File([data], name, { type: 'image/jpeg' });
+  const storageEntries = async () => (await Promise.all(['originals', 'thumbs'].map(folder =>
+    readdir(`/app/storage/${folder}`)))).flat().sort();
+  const entriesBefore = await storageEntries();
+  const malformed = await fetch(base + '/api/photos/upload', {
+    method: 'POST', headers: { cookie: admin, Origin: base, 'Content-Type': 'multipart/form-data; boundary=qa' },
+    body: 'not multipart',
+  });
+  assert.equal(malformed.status, 400);
+  assert.equal((await uploadForm([uploadFile(Buffer.alloc(20 * 1024 * 1024 + 1))])).status, 413);
+  assert.equal((await uploadForm(Array.from({ length: 11 }, () => uploadFile(image)))).status, 400);
+  const largeImage = await sharp({ create: { width: 8001, height: 8000, channels: 3, background: '#fff' } }).jpeg().toBuffer();
+  assert.equal((await uploadForm([uploadFile(largeImage)])).status, 400);
+  assert.equal((await uploadForm([uploadFile(image), uploadFile(Buffer.from('invalid image'))])).status, 400);
+  assert.equal(await prisma.photo.count({ where: { projectId: projects[0].id } }), 0);
+  assert.deepEqual(await storageEntries(), entriesBefore);
+  console.log('PASS malformed, oversized and over-dimension uploads rejected; failed batch rolled back');
   let r=await fetch(base+'/api/photos/upload',{method:'POST',headers:{cookie:admin,Origin:base},body});
   assert.equal(r.status,200);const upload=await r.json();assert.equal(upload.count,2);
   const photoId=upload.ids[0];
