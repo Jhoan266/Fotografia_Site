@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
 import { deleteStoredFile } from "@/lib/storage";
 
@@ -8,12 +8,17 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireUser();
+  const session = await getAuthenticatedSession();
+  const user = session?.user;
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!hasValidSameOrigin(request)) {
+  if (!request.headers.has("origin") || !hasValidSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  }
+
+  if (!hasRecentVaultVerification(session)) {
+    return NextResponse.json({ error: "verification_required" }, { status: 403 });
   }
 
   const { id } = await context.params;
@@ -38,6 +43,15 @@ export async function DELETE(
 
   await prisma.$transaction([
     prisma.photo.delete({ where: { id } }),
+    prisma.photoAuditEvent.create({
+      data: {
+        actorId: user.id,
+        projectId: photo.projectId,
+        photoId: photo.id,
+        photoCount: 1,
+        action: "PHOTO_DELETED",
+      },
+    }),
     prisma.photo.updateMany({
       where: {
         projectId: photo.projectId,

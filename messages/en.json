@@ -1,4 +1,13 @@
 {
+  "vaultVerification": {
+    "help": "Confirm your password to export the ZIP or delete photos. Verification lasts five minutes.",
+    "password": "Current password",
+    "unlock": "Verify access",
+    "export": "Download ZIP",
+    "confirmDelete": "Permanently delete this photo?",
+    "invalid": "Access could not be verified. Check your password or try again later.",
+    "deleteError": "The photo could not be deleted. Check that your access is still verified."
+  },
   "meta": {
     "title": "Vera Solís — Photography",
     "description": "Wedding, session and professional book photography in Barcelona."

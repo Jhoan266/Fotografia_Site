@@ -45,7 +45,7 @@ export async function endSession() {
   session.destroy();
 }
 
-export async function requireUser() {
+export async function getAuthenticatedSession() {
   const { user, token } = await getSession();
   if (!user || !token) return null;
   const active = await prisma.authSession.findFirst({
@@ -56,9 +56,22 @@ export async function requireUser() {
       user: { role: user.role },
       ...(user.role === "ADMIN" ? { adminVerified: true } : {}),
     },
-    select: { user: { select: { id: true, email: true, name: true, role: true } } },
+    select: {
+      tokenHash: true,
+      vaultVerifiedUntil: true,
+      user: { select: { id: true, email: true, name: true, role: true } },
+    },
   });
-  return active?.user ?? null;
+  return active;
+}
+
+export function hasRecentVaultVerification(session: Awaited<ReturnType<typeof getAuthenticatedSession>>) {
+  return session?.user.role === "ADMIN" &&
+    (session.vaultVerifiedUntil?.getTime() ?? 0) > Date.now();
+}
+
+export async function requireUser() {
+  return (await getAuthenticatedSession())?.user ?? null;
 }
 
 export async function requireRole(role: Role) {

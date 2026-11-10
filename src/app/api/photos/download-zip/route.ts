@@ -2,15 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZipArchive } from "archiver";
 import { Readable } from "stream";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { openStoredFileStream, storedFileExists } from "@/lib/storage";
-import { sanitizeFilename } from "@/lib/security";
+import { hasValidSameOrigin, sanitizeFilename } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const user = await requireUser();
+  return downloadZip(request, "CLIENT");
+}
+
+export async function POST(request: NextRequest) {
+  return downloadZip(request, "ADMIN");
+}
+
+async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
+  const session = await getAuthenticatedSession();
+  const user = session?.user;
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  if (user.role !== role) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (role === "ADMIN") {
+    if (!request.headers.has("origin") || !hasValidSameOrigin(request)) {
+      return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+    }
+    if (!hasRecentVaultVerification(session)) {
+      return NextResponse.json({ error: "verification_required" }, { status: 403 });
+    }
+  }
 
   const projectId = request.nextUrl.searchParams.get("projectId")?.trim();
   if (!projectId || projectId.length > 128) {
@@ -49,6 +71,17 @@ export async function GET(request: NextRequest) {
     photos = await prisma.photo.findMany({
       where: { projectId },
       orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  if (user.role === "ADMIN") {
+    await prisma.photoAuditEvent.create({
+      data: {
+        actorId: user.id,
+        projectId,
+        photoCount: photos.length,
+        action: "ZIP_REQUESTED",
+      },
     });
   }
 

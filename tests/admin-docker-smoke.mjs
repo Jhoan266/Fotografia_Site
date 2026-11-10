@@ -134,7 +134,45 @@ async function login(email, totp) {
   let r=await fetch(base+'/api/photos/upload',{method:'POST',headers:{cookie:admin,Origin:base},body});
   assert.equal(r.status,200);const upload=await r.json();assert.equal(upload.count,2);
   const photoId=upload.ids[0];
+  const projectId = projects[0].id;
+  const adminZip = `/api/photos/download-zip?projectId=${projectId}`;
+  const deletePath = `/api/photos/${photoId}/delete`;
+  const verificationPage = `/es/admin/projects/${projectId}`;
+  const verificationForm = `vault-verify-${projectId}`;
+  const verify = async (candidate) => {
+    const { html } = await page(verificationPage, admin);
+    return submit(verificationPage, html, { password: candidate }, admin, verificationForm);
+  };
+  const exportRequest = (cookie = admin, origin = base) => fetch(base + adminZip, {
+    method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
+  });
+  const deleteRequest = (origin) => fetch(base + deletePath, {
+    method: 'DELETE', headers: { cookie: admin, ...(origin ? { Origin: origin } : {}) },
+  });
   try {
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal((await deleteRequest(base)).status, 403);
+    await verify(password + 'wrong');
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal(await prisma.photoAuditEvent.count({ where: { actorId: ids[0] } }), 0);
+    await verify(password);
+    assert.equal((await page(adminZip, admin)).r.status, 403);
+    assert.equal((await exportRequest(client)).status, 403);
+    assert.equal((await exportRequest(admin, null)).status, 403);
+    assert.equal((await exportRequest(admin, 'https://untrusted.invalid')).status, 403);
+    const exported = await exportRequest();
+    assert.equal(exported.status, 200);
+    assert.equal(exported.headers.get('content-type'), 'application/zip');
+    assert.equal(Buffer.from(await exported.arrayBuffer()).readUInt32LE(0), 0x04034b50);
+    assert.equal((await deleteRequest()).status, 403);
+    assert.equal((await deleteRequest('https://untrusted.invalid')).status, 403);
+    await prisma.authSession.updateMany({
+      where: { userId: ids[0] }, data: { vaultVerifiedUntil: new Date(0) },
+    });
+    assert.equal((await exportRequest()).status, 403);
+    assert.equal((await deleteRequest(base)).status, 403);
+    await verify(password);
+    console.log('PASS sensitive actions require recent verification and deletion requires a trusted origin');
     const photo=await prisma.photo.findUnique({where:{id:photoId}});assert(photo?.thumbKey);
     r=await fetch(base+'/api/media/'+photo.thumbKey,{headers:{cookie:admin}});assert.equal(r.status,200);assert(r.headers.get('content-type').startsWith('image/'));assert(r.headers.get('cache-control').includes('no-store'));
     await prisma.user.update({where:{id:ids[0]},data:{role:'CLIENT'}});
@@ -178,9 +216,17 @@ async function login(email, totp) {
     }
   }
   assert.equal(await prisma.photo.count({where:{projectId:projects[0].id}}),0);
-  console.log('PASS photo deletion and temporary data cleanup');
+  const audit = await prisma.photoAuditEvent.findMany({ where: { actorId: ids[0], projectId } });
+  assert.equal(audit.length, 3);
+  assert.equal(audit.find(event => event.action === 'ZIP_REQUESTED')?.photoCount, 2);
+  assert.deepEqual(
+    audit.filter(event => event.action === 'PHOTO_DELETED' && event.photoCount === 1).map(event => event.photoId).sort(),
+    [...upload.ids].sort(),
+  );
+  console.log('PASS photo deletion, audit actor/project/photo/count and ZIP request tracking');
 
   const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
+  assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);
   assert.equal(logoutPage.r.status, 200);
   const logout = await submit('/es/admin/vault', logoutPage.html, {}, admin, 'logout');
@@ -197,6 +243,7 @@ async function login(email, totp) {
   console.log('PASS logout revokes only the active session and expired sessions cannot access vault or ZIP');
 
  } finally {
+  await prisma.photoAuditEvent.deleteMany({where:{actorId:{in:ids}}});
   await prisma.user.deleteMany({where:{id:{in:ids}}});
   await prisma.$disconnect();
  }
