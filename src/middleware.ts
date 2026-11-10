@@ -2,7 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { routing } from "@/i18n/routing";
-import { AppSessionData, getSessionOptions } from "@/lib/session";
+import { getSessionOptions, type AppSessionData } from "@/lib/session-cookie";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -26,7 +26,7 @@ export default async function middleware(request: NextRequest) {
     getSessionOptions(),
   );
 
-  if (!session.user) {
+  if (!session.user || !session.token) {
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
 

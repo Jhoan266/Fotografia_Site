@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { logoutAction } from "@/lib/auth";
-import type { SessionUser } from "@/lib/session";
+import type { SessionUser } from "@/lib/session-cookie";
 
 export async function AppHeader({
   locale,

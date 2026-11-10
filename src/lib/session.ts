@@ -1,61 +1,62 @@
+import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { getIronSession, type SessionOptions } from "iron-session";
+import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import type { Role } from "@prisma/client";
+import { getSessionOptions, type AppSessionData, type SessionUser } from "@/lib/session-cookie";
 
-export type SessionUser = {
-  id: string;
-  email: string;
-  name: string;
-  role: Role;
-};
-
-export type AppSessionData = {
-  user?: SessionUser;
-};
-
-function sessionSecret() {
-  const secret = process.env.SESSION_SECRET?.trim();
-
-  if (!secret || secret.length < 32) {
-    throw new Error("SESSION_SECRET must be configured with at least 32 characters.");
-  }
-
-  const lower = secret.toLowerCase();
-  if (process.env.NODE_ENV === "production" && (lower.includes("replace_me") || lower.includes("change-me"))) {
-    throw new Error("SESSION_SECRET is still using an example value.");
-  }
-
-  return secret;
-}
-
-export function getSessionOptions(): SessionOptions {
-  return {
-    password: sessionSecret(),
-    cookieName: "vs_session",
-    cookieOptions: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    },
-  };
-}
-
-export async function getSession() {
+async function getSession() {
   const cookieStore = await cookies();
   return getIronSession<AppSessionData>(cookieStore, getSessionOptions());
 }
 
-export async function requireUser() {
+function hashToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function startSession(user: SessionUser) {
   const session = await getSession();
-  if (!session.user) return null;
-  const current = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, email: true, name: true, role: true },
+  const token = randomBytes(32).toString("base64url");
+  const lifetime = user.role === "ADMIN" ? 12 * 60 * 60 : 7 * 24 * 60 * 60;
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.authSession.deleteMany({
+      where: { userId: user.id, expiresAt: { lte: now } },
+    }),
+    prisma.authSession.create({
+      data: {
+        tokenHash: hashToken(token),
+        userId: user.id,
+        expiresAt: new Date(now.getTime() + lifetime * 1000),
+      },
+    }),
+  ]);
+  session.user = user;
+  session.token = token;
+  await session.save();
+}
+
+export async function endSession() {
+  const session = await getSession();
+  if (session.token) {
+    await prisma.authSession.deleteMany({ where: { tokenHash: hashToken(session.token) } });
+  }
+  session.destroy();
+}
+
+export async function requireUser() {
+  const { user, token } = await getSession();
+  if (!user || !token) return null;
+  const active = await prisma.authSession.findFirst({
+    where: {
+      tokenHash: hashToken(token),
+      userId: user.id,
+      expiresAt: { gt: new Date() },
+      user: { role: user.role },
+    },
+    select: { user: { select: { id: true, email: true, name: true, role: true } } },
   });
-  return current?.role === session.user.role ? current : null;
+  return active?.user ?? null;
 }
 
 export async function requireRole(role: Role) {

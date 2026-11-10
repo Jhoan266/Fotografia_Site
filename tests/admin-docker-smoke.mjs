@@ -18,7 +18,7 @@ async function page(path, cookie='') {
 }
 async function submit(path, html, values, cookie='', formId) {
  const forms = [...html.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)];
- const form = formId ? forms.find(m=>m[1].includes(`id="${formId}"`)) : forms.find(m=>m[2].includes('name="email"') || m[2].includes('name="title"'));
+ const form = formId === 'logout' ? forms.find(m=>m[2].includes('Cerrar sesi')) : formId ? forms.find(m=>m[1].includes(`id="${formId}"`)) : forms.find(m=>m[2].includes('name="email"') || m[2].includes('name="title"'));
  assert(form,'Rendered action form exists');
  const body = new FormData();
  for (const m of form[2].matchAll(/<input\b([^>]*)>/g)) {
@@ -140,6 +140,22 @@ async function login(email) {
   }
   assert.equal(await prisma.photo.count({where:{projectId:projects[0].id}}),0);
   console.log('PASS photo deletion and temporary data cleanup');
+
+  const secondAdmin = await login(`${tag}-admin@example.invalid`);
+  const logoutPage = await page('/es/admin/vault', admin);
+  assert.equal(logoutPage.r.status, 200);
+  const logout = await submit('/es/admin/vault', logoutPage.html, {}, admin, 'logout');
+  assert.equal(logout.r.status, 303);
+  assert.equal((await page('/es/admin/vault', admin)).r.status, 307);
+  assert.equal((await page('/api/photos/download-zip', admin)).r.status, 401);
+  assert.equal((await page('/es/admin/vault', secondAdmin)).r.status, 200);
+  assert.equal((await prisma.authSession.updateMany({
+    where: { userId: ids[0] },
+    data: { expiresAt: new Date(0) },
+  })).count, 1);
+  assert.equal((await page('/es/admin/vault', secondAdmin)).r.status, 307);
+  assert.equal((await page('/api/photos/download-zip', secondAdmin)).r.status, 401);
+  console.log('PASS logout revokes only the active session and expired sessions cannot access vault or ZIP');
 
  } finally {
   await prisma.user.deleteMany({where:{id:{in:ids}}});
