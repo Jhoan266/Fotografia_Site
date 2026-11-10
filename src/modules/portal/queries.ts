@@ -18,8 +18,9 @@ export async function getClientPortal(userId: string) {
         title: true,
         description: true,
         sessionDate: true,
-        _count: { select: { photos: true } },
+        _count: { select: { photos: { where: { trashedAt: null } } } },
         photos: {
+          where: { trashedAt: null },
           take: 3,
           orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
           select: { thumbKey: true, storageKey: true },
@@ -29,6 +30,7 @@ export async function getClientPortal(userId: string) {
     prisma.photo.findMany({
       where: {
         project: where,
+        trashedAt: null,
         OR: [
           { favorites: { some: { userId } } },
           { selections: { some: { userId, status: "SELECTED" } } },

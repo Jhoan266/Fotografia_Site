@@ -4,7 +4,7 @@ export function listProjectsForAdmin() {
   return prisma.project.findMany({
     include: {
       client: { include: { user: true } },
-      _count: { select: { photos: true } },
+      _count: { select: { photos: { where: { trashedAt: null } } } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -15,7 +15,7 @@ export function getProjectForAdmin(projectId: string) {
     where: { id: projectId },
     include: {
       client: { include: { user: true } },
-      photos: { orderBy: { sortOrder: "asc" } },
+      photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
       packs: { include: { pack: true } },
     },
   });
@@ -34,7 +34,7 @@ export function listDeliveredProjectsForClient(userId: string) {
       status: "DELIVERED",
       client: { userId },
     },
-    include: { _count: { select: { photos: true } } },
+    include: { _count: { select: { photos: { where: { trashedAt: null } } } } },
     orderBy: [{ sessionDate: "desc" }, { createdAt: "desc" }],
   });
 }
@@ -43,7 +43,7 @@ export async function getAdminDashboardMetrics() {
   const [clients, projects, photos] = await Promise.all([
     prisma.clientProfile.count(),
     prisma.project.count(),
-    prisma.photo.count(),
+    prisma.photo.count({ where: { trashedAt: null } }),
   ]);
   return { clients, projects, photos };
 }

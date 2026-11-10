@@ -32,7 +32,7 @@ export async function GET(
   }
 
   const photo = await prisma.photo.findFirst({
-    where: { OR: [{ storageKey: key }, { thumbKey: key }] },
+    where: { trashedAt: null, OR: [{ storageKey: key }, { thumbKey: key }] },
     include: { project: { include: { client: true } } },
   });
   if (!photo) return NextResponse.json({ error: "not_found" }, { status: 404 });

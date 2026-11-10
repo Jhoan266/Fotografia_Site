@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeading, StatusBadge } from "@/components/ui/design-system";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
+import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 
 export default async function VaultPage({
   params,
@@ -19,7 +19,8 @@ export default async function VaultPage({
   }>;
 }) {
   const { locale } = await params;
-  if (!(await requireRole("ADMIN"))) redirect(`/${locale}/login`);
+  const session = await getAuthenticatedSession();
+  if (session?.user.role !== "ADMIN") redirect(`/${locale}/login`);
   const { client, project } = await searchParams;
   if (Array.isArray(client) || Array.isArray(project) || (project && !client))
     notFound();
@@ -41,6 +42,7 @@ export default async function VaultPage({
           id: true,
           title: true,
           photos: {
+            where: { trashedAt: null },
             orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
             select: {
               id: true,
@@ -72,10 +74,18 @@ export default async function VaultPage({
             id: true,
             title: true,
             status: true,
-            _count: { select: { photos: true } },
+            _count: { select: { photos: { where: { trashedAt: null } } } },
           },
         })
       : [];
+  const format = await getFormatter();
+  const trashedPhotos = current ? (await prisma.photo.findMany({
+    where: { projectId: current.id, trashedAt: { not: null } },
+    orderBy: [{ trashedAt: "desc" }, { id: "asc" }],
+    select: { id: true, filename: true, trashedAt: true },
+  })).flatMap(({ id, filename, trashedAt }) => trashedAt ? [
+    { id, filename, trashedAt: format.dateTime(trashedAt, { dateStyle: "medium" }) },
+  ] : []) : [];
   const statuses = {
     DRAFT: t("draft"),
     DELIVERED: t("delivered"),
@@ -131,12 +141,13 @@ export default async function VaultPage({
               <h2 className="font-display text-xl">
                 {t("photos")} ({photos.length})
               </h2>
-              {photos.length ? (
+              {photos.length || trashedPhotos.length ? (
                 <AdminPhotoManager
-                  key={JSON.stringify(photos.map((photo) => photo.id))}
+                  key={JSON.stringify([photos.map((photo) => photo.id), trashedPhotos.map((photo) => photo.id)])}
                   projectId={current.id}
                   initialPhotos={photos}
-                  deleteLabel={t("deletePhoto")}
+                  trashedPhotos={trashedPhotos}
+                  initialVerifiedUntil={hasRecentVaultVerification(session) ? session.vaultVerifiedUntil!.getTime() : 0}
                   downloadLabel={t("vault.download")}
                 />
               ) : (

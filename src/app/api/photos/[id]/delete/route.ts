@@ -1,69 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
-import { hasValidSameOrigin } from "@/lib/security";
-import { deleteStoredFile } from "@/lib/storage";
+import type { NextRequest } from "next/server";
+import { changePhotoTrashState } from "@/modules/photos/trash";
 
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await getAuthenticatedSession();
-  const user = session?.user;
-  if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  if (!request.headers.has("origin") || !hasValidSameOrigin(request)) {
-    return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
-  }
-
-  if (!hasRecentVaultVerification(session)) {
-    return NextResponse.json({ error: "verification_required" }, { status: 403 });
-  }
-
   const { id } = await context.params;
-  if (!id || id.length > 128) {
-    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
-  }
-
-  const photo = await prisma.photo.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      projectId: true,
-      storageKey: true,
-      thumbKey: true,
-      sortOrder: true,
-    },
-  });
-
-  if (!photo) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
-
-  await prisma.$transaction([
-    prisma.photo.delete({ where: { id } }),
-    prisma.photoAuditEvent.create({
-      data: {
-        actorId: user.id,
-        projectId: photo.projectId,
-        photoId: photo.id,
-        photoCount: 1,
-        action: "PHOTO_DELETED",
-      },
-    }),
-    prisma.photo.updateMany({
-      where: {
-        projectId: photo.projectId,
-        sortOrder: { gt: photo.sortOrder },
-      },
-      data: { sortOrder: { decrement: 1 } },
-    }),
-  ]);
-
-  const keys = [photo.storageKey, photo.thumbKey].filter((value): value is string => Boolean(value));
-  const cleanup = await Promise.allSettled(keys.map((key) => deleteStoredFile(key)));
-  const orphaned = cleanup.filter((result) => result.status === "rejected").length;
-
-  return NextResponse.json({ deleted: true, orphanedObjects: orphaned });
+  return changePhotoTrashState(request, id, true);
 }

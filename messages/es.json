@@ -1,4 +1,13 @@
 {
+  "photoTrash": {
+    "title": "Papelera",
+    "move": "Mover a la papelera",
+    "restore": "Restaurar",
+    "confirm": "¿Mover esta foto a la papelera? Podrás restaurarla después.",
+    "movedAt": "En la papelera desde {date}",
+    "help": "Confirma tu contraseña para exportar el ZIP, mover fotos a la papelera o restaurarlas. La verificación dura cinco minutos.",
+    "error": "No se pudo cambiar el estado de la foto. Actualiza la página y vuelve a intentarlo."
+  },
   "vaultVerification": {
     "help": "Confirma tu contraseña para descargar el ZIP o borrar fotos. La verificación dura cinco minutos.",
     "password": "Contraseña actual",

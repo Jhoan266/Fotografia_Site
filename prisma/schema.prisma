@@ -73,6 +73,7 @@ model Project {
 }
 
 model Photo {
+  trashedAt  DateTime?
   id         String      @id @default(cuid())
   projectId  String
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -86,6 +87,8 @@ model Photo {
   comments   Comment[]
   selections Selection[]
   createdAt  DateTime    @default(now())
+
+  @@index([projectId, trashedAt])
 }
 
 model Favorite {
@@ -181,6 +184,8 @@ model AuthSession {
 enum PhotoAuditAction {
   ZIP_REQUESTED
   PHOTO_DELETED
+  PHOTO_TRASHED
+  PHOTO_RESTORED
 }
 
 model PhotoAuditEvent {

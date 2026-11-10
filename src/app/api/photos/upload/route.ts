@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const existing = await prisma.photo.count({ where: { projectId } });
+  const { _max } = await prisma.photo.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+  const existing = (_max.sortOrder ?? -1) + 1;
   let order = existing;
   const created: string[] = [];
 

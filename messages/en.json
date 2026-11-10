@@ -1,4 +1,13 @@
 {
+  "photoTrash": {
+    "title": "Trash",
+    "move": "Move to trash",
+    "restore": "Restore",
+    "confirm": "Move this photo to trash? You can restore it later.",
+    "movedAt": "Moved to trash on {date}",
+    "help": "Confirm your password to export a ZIP, move photos to trash or restore them. Verification lasts five minutes.",
+    "error": "The photo could not be updated. Refresh the page and try again."
+  },
   "vaultVerification": {
     "help": "Confirm your password to export the ZIP or delete photos. Verification lasts five minutes.",
     "password": "Current password",

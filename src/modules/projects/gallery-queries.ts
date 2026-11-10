@@ -6,7 +6,8 @@ export function getClientProjectGallery(projectId: string, userId: string) {
     include: {
       client: true,
       photos: {
-        orderBy: { sortOrder: "asc" },
+        where: { trashedAt: null },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         include: {
           favorites: { where: { userId } },
           selections: { where: { userId } },

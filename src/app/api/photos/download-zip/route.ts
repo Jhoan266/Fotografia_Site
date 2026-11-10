@@ -55,22 +55,23 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
   let photos = await prisma.photo.findMany({
     where: {
       projectId,
+      trashedAt: null,
       selections: { some: { userId: user.id, status: "SELECTED" } },
     },
-    orderBy: { sortOrder: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
   });
 
   if (!photos.length) {
     photos = await prisma.photo.findMany({
-      where: { projectId, favorites: { some: { userId: user.id } } },
-      orderBy: { sortOrder: "asc" },
+      where: { projectId, trashedAt: null, favorites: { some: { userId: user.id } } },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     });
   }
 
   if (!photos.length) {
     photos = await prisma.photo.findMany({
-      where: { projectId },
-      orderBy: { sortOrder: "asc" },
+      where: { projectId, trashedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     });
   }
 
