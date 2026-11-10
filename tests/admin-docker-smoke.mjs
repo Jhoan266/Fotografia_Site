@@ -1,7 +1,7 @@
 // Run against an isolated local Docker web service configured with the dedicated MFA fixture.
 import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import sharp from 'sharp';
@@ -27,7 +27,7 @@ async function page(path, cookie='') {
  const r = await fetch(base+path,{headers:{cookie},redirect:'manual'});
  return {r,html:await r.text()};
 }
-async function submit(path, html, values, cookie='', formId) {
+async function submit(path, html, values, cookie='', formId, extraHeaders={}) {
  const forms = [...html.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)];
  const form = formId === 'logout' ? forms.find(m=>m[2].includes('Cerrar sesi')) : formId ? forms.find(m=>m[1].includes(`id="${formId}"`)) : forms.find(m=>m[2].includes('name="email"') || m[2].includes('name="title"'));
  assert(form,'Rendered action form exists');
@@ -37,12 +37,18 @@ async function submit(path, html, values, cookie='', formId) {
   if(attrs.type==='hidden' && attrs.name) body.append(attrs.name,attrs.value||'');
  }
  for(const [key,value] of Object.entries(values)) body.set(key,value);
- const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base},body,redirect:'manual'});
+ const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base,...extraHeaders},body,redirect:'manual'});
  return {r,html:await r.text()};
 }
-async function attemptLogin(email, totp) {
+const proxyToken = process.env.TRUSTED_PROXY_TOKEN;
+const proxyHeaders = proxyToken ? {
+ 'x-studio-proxy-token': proxyToken,
+ 'x-studio-client-ip': '192.0.2.10',
+ 'x-forwarded-for': '192.0.2.99',
+} : {};
+async function attemptLogin(email, totp, sourceHeaders = proxyHeaders) {
  const {html}=await page('/es/login');
- return (await submit('/es/login',html,{email,password,locale:'es',...(totp ? {totp} : {})})).r;
+ return (await submit('/es/login',html,{email,password,locale:'es',...(totp ? {totp} : {})}, '', undefined, sourceHeaders)).r;
 }
 async function login(email, totp) {
  const r=await attemptLogin(email, totp);
@@ -85,6 +91,18 @@ async function login(email, totp) {
    console.log('PASS admin MFA, missing code, replay, and unverified session rejection');
   }
   const client=await login(`${tag}-client@example.invalid`);
+  if (proxyToken) {
+    const blocked = await attemptLogin(`${tag}-client@example.invalid`, undefined, {
+      'x-forwarded-for': '192.0.2.10',
+      'x-studio-client-ip': '192.0.2.10',
+    });
+    assert.notEqual(blocked.status, 303);
+    assert.equal(blocked.headers.getSetCookie().some(value => value.startsWith('vs_session=')), false);
+    const ipKey = ip => 'login-ip:' + createHash('sha256').update(ip).digest('hex');
+    assert((await prisma.rateLimitBucket.findUnique({ where: { key: ipKey('192.0.2.10') } })).count > 1);
+    assert.equal(await prisma.rateLimitBucket.findUnique({ where: { key: ipKey('192.0.2.99') } }), null);
+    console.log('PASS login rejects unauthenticated forwarding and successful login preserves the trusted IP bucket');
+  }
   for(const locale of ['es','en','fr']) {
    for(const route of ['admin','admin/clients','admin/projects/new','admin/vault']) {
     for(const cookie of ['',client]) {

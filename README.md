@@ -106,3 +106,31 @@ docker rm -f fotografia-totp-qa-web
 docker compose -p fotografia-totp-qa down -v
 Remove-Item Env:ADMIN_TOTP_SECRETS
 ```
+
+## Proxy de confianza en produccion
+
+Compose publica el puerto web y los puertos opcionales de MinIO solo en
+`127.0.0.1`. Para publicar el sitio, usa un proxy HTTPS en el mismo host y
+configura `NEXT_PUBLIC_APP_URL` con el origen publico exacto. Si el proxy vive
+en Docker, conecta ambos servicios a una red privada y usa `web:3000`.
+
+Genera una clave aleatoria exclusiva para `TRUSTED_PROXY_TOKEN` y configura el
+mismo valor en el entorno de la aplicacion y en la configuracion privada del
+proxy. El proxy debe sobrescribir las dos cabeceras internas en cada solicitud.
+En Nginx, dentro del bloque del sitio HTTPS:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Studio-Client-IP $remote_addr;
+    proxy_set_header X-Studio-Proxy-Token "REPLACE_WITH_DEPLOYMENT_SECRET";
+}
+```
+
+Si hay un CDN delante, configura el proxy para aceptar la IP original solo
+desde los rangos de confianza de ese CDN. El acceso directo en desarrollo
+funciona con una URL HTTP de loopback sin clave y mantiene el limite por
+cuenta. En una URL publica, el inicio de sesion requiere el proxy configurado.
