@@ -168,11 +168,29 @@ model RateLimitBucket {
 }
 
 model AuthSession {
-  tokenHash     String   @id
-  userId        String
-  expiresAt     DateTime
-  adminVerified Boolean  @default(false)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash          String    @id
+  userId             String
+  expiresAt          DateTime
+  adminVerified      Boolean   @default(false)
+  vaultVerifiedUntil DateTime?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+}
+
+enum PhotoAuditAction {
+  ZIP_REQUESTED
+  PHOTO_DELETED
+}
+
+model PhotoAuditEvent {
+  id         String           @id @default(cuid())
+  actorId    String
+  projectId  String
+  photoId    String?
+  photoCount Int
+  action     PhotoAuditAction
+  createdAt  DateTime         @default(now())
+
+  @@index([projectId, createdAt])
 }

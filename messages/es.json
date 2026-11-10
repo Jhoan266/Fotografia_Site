@@ -1,4 +1,13 @@
 {
+  "vaultVerification": {
+    "help": "Confirma tu contraseña para descargar el ZIP o borrar fotos. La verificación dura cinco minutos.",
+    "password": "Contraseña actual",
+    "unlock": "Verificar acceso",
+    "export": "Descargar ZIP",
+    "confirmDelete": "¿Borrar esta foto de forma permanente?",
+    "invalid": "No se pudo verificar el acceso. Revisa tu contraseña o vuelve a intentarlo más tarde.",
+    "deleteError": "No se pudo borrar la foto. Comprueba que tu acceso siga verificado."
+  },
   "meta": {
     "title": "Vera Solís — Fotografía",
     "description": "Fotografía de bodas, sesiones y book profesional en Barcelona."
