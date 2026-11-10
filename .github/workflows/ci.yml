@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
@@ -46,6 +48,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
+      - name: Security unit tests
+        run: npx --no-install tsx --test tests/login-source.test.ts tests/upload-body.test.ts tests/zip-export.test.ts
+
+      - name: Backup retention tests
+        run: python3 tests/backup-retention-test.py -v
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -61,3 +72,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Isolated PostgreSQL and S3 restore
+        shell: pwsh
+        run: ./tests/s3-bucket-restore.ps1
