@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { adminTotpStep } from "@/lib/admin-totp";
 import { createHash } from "crypto";
+import { loginSource } from "@/lib/login-source";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -33,19 +34,16 @@ export async function loginAction(
     return { error: "invalid" };
   }
 
-  const requestHeaders = await headers();
-  const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || requestHeaders.get("x-real-ip") || "unknown";
+  const source = loginSource(await headers(), process.env.TRUSTED_PROXY_TOKEN, process.env.NEXT_PUBLIC_APP_URL);
+  if (!source.allowed) return { error: "invalid" };
 
   const emailLimitKey = loginKey("login-email", email);
-  const ipLimitKey = loginKey("login-ip", ip);
-
-  const [emailLimit, ipLimit] = await Promise.all([
+  const limits = await Promise.all([
     rateLimit(emailLimitKey, 8, 5 * 60_000),
-    rateLimit(ipLimitKey, 30, 5 * 60_000),
+    source.ip ? rateLimit(loginKey("login-ip", source.ip), 30, 5 * 60_000) : null,
   ]);
 
-  if (!emailLimit.ok || !ipLimit.ok) {
+  if (limits.some((limit) => limit && !limit.ok)) {
     return { error: "rate_limited" };
   }
 
@@ -77,7 +75,7 @@ export async function loginAction(
     if (consumed.count !== 1) return { error: "invalid" };
   }
 
-  await Promise.all([clearRateLimit(emailLimitKey), clearRateLimit(ipLimitKey)]);
+  await clearRateLimit(emailLimitKey);
 
   await startSession({
     id: user.id,
