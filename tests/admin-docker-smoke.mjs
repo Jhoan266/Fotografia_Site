@@ -1,6 +1,6 @@
-// Run only against the local Docker web service: Get-Content -Raw tests/admin-docker-smoke.mjs | docker compose exec -T -e ALLOW_LOCAL_SMOKE=1 web node --input-type=module
+// Run against an isolated local Docker web service configured with the dedicated MFA fixture.
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import sharp from 'sharp';
@@ -11,6 +11,16 @@ assert.equal(process.env.NEXT_PUBLIC_APP_URL, base, 'Run only against the local 
 const tag = `qa-${randomUUID()}`;
 const password = randomUUID() + 'Ab!';
 const ids = [];
+const adminEmail = process.env.SMOKE_TOTP_EMAIL;
+assert(adminEmail?.endsWith('@example.invalid'), 'Configure a dedicated local MFA fixture account');
+
+function fixtureCode(step) {
+ const counter = Buffer.alloc(8);
+ counter.writeBigUInt64BE(BigInt(step));
+ const digest = createHmac('sha1', '12345678901234567890').update(counter).digest();
+ const value = digest.readUInt32BE(digest.at(-1) & 15) & 0x7fffffff;
+ return String(value % 1_000_000).padStart(6, '0');
+}
 function decode(s) { return s.replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
 async function page(path, cookie='') {
  const r = await fetch(base+path,{headers:{cookie},redirect:'manual'});
@@ -29,9 +39,12 @@ async function submit(path, html, values, cookie='', formId) {
  const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base},body,redirect:'manual'});
  return {r,html:await r.text()};
 }
-async function login(email) {
+async function attemptLogin(email, totp) {
  const {html}=await page('/es/login');
- const {r}=await submit('/es/login',html,{email,password,locale:'es'});
+ return (await submit('/es/login',html,{email,password,locale:'es',...(totp ? {totp} : {})})).r;
+}
+async function login(email, totp) {
+ const r=await attemptLogin(email, totp);
  assert.equal(r.status,303,'Login redirects');
  const cookie=r.headers.getSetCookie().find(value=>value.startsWith('vs_session='))?.split(';')[0];
  assert(cookie?.startsWith('vs_session='),'Login sets session');
@@ -41,9 +54,35 @@ async function login(email) {
  try {
   const hash=await bcrypt.hash(password,12);
   for(const role of ['ADMIN','CLIENT']) {
-   const u=await prisma.user.create({data:{email:`${tag}-${role.toLowerCase()}@example.invalid`,name:tag+role,passwordHash:hash,role}});ids.push(u.id);
+   const u=await prisma.user.create({data:{email:role==='ADMIN' ? adminEmail : `${tag}-client@example.invalid`,name:tag+role,passwordHash:hash,role}});ids.push(u.id);
   }
-  const admin=await login(`${tag}-admin@example.invalid`);
+  {
+   for (const invalidCode of [undefined, 'invalid', fixtureCode(Math.floor(Date.now()/30_000)-2)]) {
+    const rejected = await attemptLogin(adminEmail, invalidCode);
+    assert.notEqual(rejected.status,303);
+    assert.equal(rejected.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+   }
+  }
+  const unconfigured = await prisma.user.create({
+   data:{email:`${tag}-unconfigured@example.invalid`,name:tag,passwordHash:hash,role:'ADMIN'},
+  });
+  ids.push(unconfigured.id);
+  const unconfiguredLogin = await attemptLogin(unconfigured.email,fixtureCode(Math.floor(Date.now()/30_000)));
+  assert.notEqual(unconfiguredLogin.status,303);
+  assert.equal(unconfiguredLogin.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+  const code = fixtureCode(Math.floor(Date.now()/30_000)-1);
+  const admin=await login(adminEmail,code);
+  {
+   const replay = await attemptLogin(adminEmail,code);
+   assert.notEqual(replay.status,303);
+   assert.equal(replay.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
+   assert.equal((await prisma.authSession.updateMany({
+     where:{userId:ids[0]},data:{adminVerified:false}
+   })).count,1);
+   assert.equal((await page('/api/photos/download-zip',admin)).r.status,401);
+   await prisma.authSession.updateMany({where:{userId:ids[0]},data:{adminVerified:true}});
+   console.log('PASS admin MFA, missing code, replay, and unverified session rejection');
+  }
   const client=await login(`${tag}-client@example.invalid`);
   for(const locale of ['es','en','fr']) {
    for(const route of ['admin','admin/clients','admin/projects/new','admin/vault']) {
@@ -141,7 +180,7 @@ async function login(email) {
   assert.equal(await prisma.photo.count({where:{projectId:projects[0].id}}),0);
   console.log('PASS photo deletion and temporary data cleanup');
 
-  const secondAdmin = await login(`${tag}-admin@example.invalid`);
+  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
   const logoutPage = await page('/es/admin/vault', admin);
   assert.equal(logoutPage.r.status, 200);
   const logout = await submit('/es/admin/vault', logoutPage.html, {}, admin, 'logout');

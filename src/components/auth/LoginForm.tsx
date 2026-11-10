@@ -51,6 +51,20 @@ export function LoginForm({ locale }: { locale: string }) {
           required
         />
       </label>
+      <label className="block space-y-2">
+        <span className="text-[11px] tracking-[0.22em] text-white/50 uppercase">
+          {t("totp")}
+        </span>
+        <input
+          className="input-field"
+          name="totp"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          aria-describedby="login-totp-help"
+        />
+        <span id="login-totp-help" className="block text-sm text-white/55">{t("totpHelp")}</span>
+      </label>
       {errorMessage && <p className="text-sm text-red-300">{errorMessage}</p>}
       <button type="submit" className="btn-primary w-full" disabled={pending}>
         {pending ? "…" : t("submit")}

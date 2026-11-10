@@ -70,3 +70,39 @@ npm run build
 - PostgreSQL no expuesto por defecto.
 
 Antes de producción deben completarse pruebas automatizadas, observabilidad, backups y políticas de retención.
+
+## Administrator two-step verification
+
+Configure each administrator before deploying this migration. It revokes existing
+administrator sessions, and accounts without a configured key cannot sign in.
+Client sign-in still uses email and password.
+
+1. Generate a unique key for each administrator in a private terminal:
+   `node -e "const {randomInt}=require('node:crypto');const a='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';console.log(Array.from({length:32},()=>a[randomInt(32)]).join(''))"`
+2. Add the key to the administrator's authenticator app as a time-based account
+   with SHA-1, six digits and a 30-second period. Share the key through a secure
+   channel and keep a protected recovery copy.
+3. Configure `ADMIN_TOTP_SECRETS` in the deployment secret store as a JSON object
+   keyed by lowercase administrator email. For Compose, use the untracked
+   environment file. Restart the web service and verify sign-in with a new code.
+
+For a lost device or suspected key exposure, provision a new key and revoke
+the affected user's sessions by deleting their rows in `AuthSession` through
+your trusted database administration channel. Keep the old key out of the new
+configuration. There is no self-service reset or recovery-code flow.
+
+### Prueba local en un proyecto Docker aislado
+
+La siguiente clave es un dato de prueba publico. Usala solo en este proyecto
+temporal, que no publica el puerto web.
+
+```powershell
+$env:ADMIN_TOTP_SECRETS = '{"qa-mfa@example.invalid":"GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"}'
+docker compose -p fotografia-totp-qa run -d --build --name fotografia-totp-qa-web web
+# Espera a que docker logs fotografia-totp-qa-web indique que Next.js esta listo.
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Get-Content -Raw -Encoding UTF8 tests/admin-docker-smoke.mjs | docker exec -i -e ALLOW_LOCAL_SMOKE=1 -e SMOKE_TOTP_EMAIL=qa-mfa@example.invalid fotografia-totp-qa-web node --input-type=module
+docker rm -f fotografia-totp-qa-web
+docker compose -p fotografia-totp-qa down -v
+Remove-Item Env:ADMIN_TOTP_SECRETS
+```

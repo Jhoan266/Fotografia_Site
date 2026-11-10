@@ -32,6 +32,7 @@ model User {
   id            String         @id @default(cuid())
   email         String         @unique
   passwordHash  String
+  lastTotpStep  Int?
   name          String
   role          Role
   locale        String         @default("es")
@@ -167,10 +168,11 @@ model RateLimitBucket {
 }
 
 model AuthSession {
-  tokenHash String   @id
-  userId    String
-  expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash     String   @id
+  userId        String
+  expiresAt     DateTime
+  adminVerified Boolean  @default(false)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }

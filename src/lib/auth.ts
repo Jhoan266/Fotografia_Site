@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { adminTotpStep } from "@/lib/admin-totp";
 import { createHash } from "crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -59,6 +60,23 @@ export async function loginAction(
     return { error: "invalid" };
   }
 
+  if (user.role === "ADMIN") {
+    const code = formData.get("totp");
+    const step = typeof code === "string" ? adminTotpStep(user.email, code) : null;
+    if (step === null) return { error: "invalid" };
+
+    const consumed = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        role: "ADMIN",
+        passwordHash: user.passwordHash,
+        OR: [{ lastTotpStep: null }, { lastTotpStep: { lt: step } }],
+      },
+      data: { lastTotpStep: step },
+    });
+    if (consumed.count !== 1) return { error: "invalid" };
+  }
+
   await Promise.all([clearRateLimit(emailLimitKey), clearRateLimit(ipLimitKey)]);
 
   await startSession({
@@ -66,7 +84,7 @@ export async function loginAction(
     email: user.email,
     name: user.name,
     role: user.role,
-  });
+  }, user.role === "ADMIN");
 
   if (user.role === "ADMIN") {
     redirect(`/${locale}/admin`);

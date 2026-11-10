@@ -14,7 +14,7 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function startSession(user: SessionUser) {
+export async function startSession(user: SessionUser, adminVerified = false) {
   const session = await getSession();
   const token = randomBytes(32).toString("base64url");
   const lifetime = user.role === "ADMIN" ? 12 * 60 * 60 : 7 * 24 * 60 * 60;
@@ -27,6 +27,7 @@ export async function startSession(user: SessionUser) {
       data: {
         tokenHash: hashToken(token),
         userId: user.id,
+        adminVerified,
         expiresAt: new Date(now.getTime() + lifetime * 1000),
       },
     }),
@@ -53,6 +54,7 @@ export async function requireUser() {
       userId: user.id,
       expiresAt: { gt: new Date() },
       user: { role: user.role },
+      ...(user.role === "ADMIN" ? { adminVerified: true } : {}),
     },
     select: { user: { select: { id: true, email: true, name: true, role: true } } },
   });

@@ -94,9 +94,11 @@
     "title": "Acceso privado",
     "subtitle": "Entra para ver tus sesiones entregadas.",
     "email": "Email",
+    "totp": "Código de verificación",
+    "totpHelp": "Solo para administradores. Usa el código de tu aplicación de autenticación.",
     "password": "Contraseña",
     "submit": "Entrar",
-    "errorInvalid": "Email o contraseña incorrectos.",
+    "errorInvalid": "Revisa tus datos de acceso y, si eres administrador, el código de verificación.",
     "errorMissing": "Introduce email y contraseña.",
     "errorRate": "Demasiados intentos. Espera un minuto."
   },
