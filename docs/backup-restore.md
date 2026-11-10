@@ -7,29 +7,21 @@ fotos en papelera.
 
 ## Copia con almacenamiento local
 
-Ejecuta los ejemplos en Bash desde el directorio de Compose, con el proyecto
-de origen seleccionado. Usa un directorio nuevo y privado en un volumen
-cifrado y confirma el nombre del volumen de fotos con `docker volume ls`.
-Coordina una ventana de mantenimiento y pausa todos los procesos que escriban
-en PostgreSQL o en el almacenamiento, incluidos los que esten fuera de Compose.
+Ejecuta el comando desde el directorio de Compose, con el proyecto de origen
+seleccionado. Usa Bash con las utilidades GNU y un directorio existente,
+privado y cifrado. Coordina una ventana de mantenimiento y pausa cualquier
+escritor externo a Compose. El comando requiere que la web esté encendida,
+la detiene durante la copia y la vuelve a iniciar.
 
 ```bash
-set -e
-umask 077
-backup=/ruta/cifrada/copia-nueva
-photos=repository_storage_data
-mkdir "$backup"
-docker compose stop web
-trap 'docker compose start web' EXIT
-docker compose exec -T postgres sh -ec \
-  'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner --no-acl' \
-  > "$backup/fotografia.dump"
-docker run --rm --network none \
-  --mount "type=volume,source=$photos,target=/photos,readonly" \
-  --mount "type=bind,source=$backup,target=/backup" \
-  postgres:16-alpine tar -C /photos -czf /backup/photos.tar.gz .
-(cd "$backup" && sha256sum fotografia.dump photos.tar.gz > SHA256SUMS)
+bash scripts/backup-local.sh /ruta/cifrada/copias
 ```
+
+El comando imprime la ruta de la copia después de validar ambos archivos y
+generar el manifiesto. Un fallo devuelve un código distinto de cero y elimina
+los archivos parciales. Si el proceso termina abruptamente y deja el bloqueo
+`.fotografia-backup.lock`, verifica primero que no quede ninguna copia activa y
+comprueba el estado de la web antes de retirar el bloqueo.
 
 Conserva ambos archivos y su manifiesto juntos, en almacenamiento privado y
 cifrado, con una copia separada del servidor de origen. Anota la fecha y el
