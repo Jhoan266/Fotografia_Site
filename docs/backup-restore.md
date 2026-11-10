@@ -121,3 +121,12 @@ try {
   Remove-Item Env:ALLOW_LOCAL_S3_TEST,Env:S3_ENDPOINT,Env:S3_BUCKET,Env:S3_REGION,Env:S3_ACCESS_KEY,Env:S3_SECRET_KEY,Env:S3_FORCE_PATH_STYLE -ErrorAction SilentlyContinue
 }
 ```
+
+Para incluir el simulacro de restauracion, inicia un segundo contenedor con
+las mismas opciones y credenciales ficticias, pero con otro nombre, por
+ejemplo `fotografia-s3-restore-qa`. Cuando este listo, define
+`S3_RESTORE_ENDPOINT` con su URL de loopback antes de ejecutar los tests.
+Deten ambos contenedores y elimina la variable al terminar. El test guarda
+un original y una miniatura ficticios en un directorio temporal, comprueba
+que ya no existan en el origen y los recupera en el destino usando sus claves
+originales. Este simulacro cubre dos objetos y no enumera un bucket completo.

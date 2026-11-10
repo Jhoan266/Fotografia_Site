@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, unlink, writeFile, rmdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { planZip, streamZip } from "../src/modules/photos/zip-export";
@@ -45,4 +48,59 @@ test("isolated S3 supports private objects, streaming ZIPs and cleanup", {
     await storage.delete(key);
   }
   assert.equal(await storage.size(key, signal), null);
+});
+
+test("S3 restore preserves object keys and bytes in an independent store", {
+  skip: process.env.ALLOW_LOCAL_S3_TEST !== "1" || !process.env.S3_RESTORE_ENDPOINT,
+}, async () => {
+  const source = process.env.S3_ENDPOINT!;
+  const target = process.env.S3_RESTORE_ENDPOINT!;
+  for (const address of [source, target]) {
+    assert.equal(new URL(address).hostname, "127.0.0.1");
+  }
+  assert.notEqual(new URL(source).origin, new URL(target).origin);
+  assert.equal(process.env.S3_BUCKET, "fotografia-qa");
+  assert.equal(process.env.S3_ACCESS_KEY, "fotografia-qa");
+
+  const storage = new S3StorageProvider();
+  const id = randomUUID();
+  const files = new Map([
+    [`originals/${id}.jpg`, Buffer.from("synthetic original")],
+    [`thumbs/${id}.webp`, Buffer.from("synthetic thumbnail")],
+  ]);
+  const directory = await mkdtemp(join(tmpdir(), "fotografia-s3-restore-"));
+  const backup = [...files.keys()].map((key, index) => ({ key, path: join(directory, String(index)) }));
+  try {
+    for (const [key, bytes] of files) await storage.put(key, bytes);
+    for (const { key, path } of backup) await writeFile(path, await storage.get(key));
+    for (const key of files.keys()) {
+      await storage.delete(key);
+      assert.equal(await storage.size(key), null);
+    }
+
+    process.env.S3_ENDPOINT = target;
+    for (const { key, path } of backup) {
+      assert.equal(await storage.size(key), null);
+      await storage.put(key, await readFile(path));
+    }
+    for (const [key, bytes] of files) {
+      assert.equal(await storage.size(key), bytes.length);
+      assert.deepEqual(await storage.get(key), bytes);
+    }
+  } finally {
+    try {
+      for (const endpoint of [source, target]) {
+        process.env.S3_ENDPOINT = endpoint;
+        await Promise.all([...files.keys()].map((key) => storage.delete(key)));
+      }
+    } finally {
+      process.env.S3_ENDPOINT = source;
+      for (const { path } of backup) {
+        await unlink(path).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "ENOENT") throw error;
+        });
+      }
+      await rmdir(directory);
+    }
+  }
 });
