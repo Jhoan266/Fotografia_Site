@@ -64,3 +64,23 @@ objetos y sus claves, tomada durante la misma pausa de escrituras. Restaura
 primero a un bucket separado, verifica los objetos y conecta solo el entorno
 de prueba. El simulacro local cubre PostgreSQL y volumen Docker. La copia y
 restauracion del bucket remoto requieren una prueba propia.
+
+## Retencion local
+
+Ejecuta la retencion en un directorio privado y dedicado a un solo
+despliegue. El comando conserva, como minimo, las N copias verificadas mas
+recientes y todas las copias verificadas dentro de la ventana indicada.
+Ordena por la fecha UTC del nombre y lee ambos archivos para comprobar sus
+sumas. Conserva las copias incompletas o corruptas para revision. Revisa
+la salida antes de aplicar y evita ejecutar dos procesos de retencion
+sobre el mismo directorio a la vez. Requiere Python 3.11 o posterior.
+
+Ejemplo de vista previa con cinco copias como minimo y una ventana de 30 dias:
+
+```bash
+python3 scripts/backup-retention.py /ruta/cifrada/copias --keep 5 --days 30
+```
+
+Agrega `--apply` solo cuando hayas revisado la lista. Los valores del ejemplo
+son ilustrativos. El comando no programa ejecuciones ni aplica una politica
+al almacenamiento S3.
