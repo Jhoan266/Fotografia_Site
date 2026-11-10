@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, rm, writeFile } from "fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
 import type { StorageProvider } from "@/modules/storage/types";
@@ -34,12 +34,14 @@ export class LocalStorageProvider implements StorageProvider {
     return readFile(resolveStorageKey(key));
   }
 
-  async exists(key: string) {
+  async size(key: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     try {
-      await access(resolveStorageKey(key));
-      return true;
-    } catch {
-      return false;
+      const entry = await stat(resolveStorageKey(key));
+      return entry.isFile() ? entry.size : null;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
     }
   }
 
@@ -47,7 +49,7 @@ export class LocalStorageProvider implements StorageProvider {
     await rm(resolveStorageKey(key), { force: true });
   }
 
-  openReadStream(key: string) {
-    return createReadStream(resolveStorageKey(key));
+  openReadStream(key: string, signal?: AbortSignal) {
+    return createReadStream(resolveStorageKey(key), { signal });
   }
 }

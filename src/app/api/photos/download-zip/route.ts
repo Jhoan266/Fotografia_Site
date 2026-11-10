@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ZipArchive } from "archiver";
-import { Readable } from "stream";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
-import { openStoredFileStream, storedFileExists } from "@/lib/storage";
-import { hasValidSameOrigin, sanitizeFilename } from "@/lib/security";
+import { getStorageProvider } from "@/modules/storage";
+import { MAX_ZIP_PHOTOS, ZIP_TIMEOUT_MS, ZipLimitExceeded, planZip, reserveZipExport, streamZip } from "@/modules/photos/zip-export";
+import { contentDispositionAttachment, hasValidSameOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -52,67 +51,65 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  let photos = await prisma.photo.findMany({
-    where: {
-      projectId,
-      trashedAt: null,
-      selections: { some: { userId: user.id, status: "SELECTED" } },
-    },
-    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-  });
-
-  if (!photos.length) {
-    photos = await prisma.photo.findMany({
-      where: { projectId, trashedAt: null, favorites: { some: { userId: user.id } } },
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+  const release = reserveZipExport(user.id);
+  if (!release) {
+    return NextResponse.json({ error: "export_busy" }, {
+      status: 429,
+      headers: { "Retry-After": "5" },
     });
   }
 
-  if (!photos.length) {
-    photos = await prisma.photo.findMany({
-      where: { projectId, trashedAt: null },
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(ZIP_TIMEOUT_MS)]);
+  let streaming = false;
+  try {
+    const query = {
+      take: MAX_ZIP_PHOTOS + 1,
+      orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }],
+      select: { filename: true, storageKey: true },
+    };
+    const activePhotos = { projectId, trashedAt: null };
+    let photos = await prisma.photo.findMany({
+      ...query,
+      where: { ...activePhotos, selections: { some: { userId: user.id, status: "SELECTED" } } },
     });
-  }
+    if (!photos.length) {
+      photos = await prisma.photo.findMany({
+        ...query,
+        where: { ...activePhotos, favorites: { some: { userId: user.id } } },
+      });
+    }
+    if (!photos.length) {
+      photos = await prisma.photo.findMany({ ...query, where: activePhotos });
+    }
 
-  if (user.role === "ADMIN") {
-    await prisma.photoAuditEvent.create({
-      data: {
-        actorId: user.id,
-        projectId,
-        photoCount: photos.length,
-        action: "ZIP_REQUESTED",
+    const storage = getStorageProvider();
+    const entries = await planZip(photos, storage, signal);
+    if (user.role === "ADMIN") {
+      await prisma.photoAuditEvent.create({
+        data: { actorId: user.id, projectId, photoCount: entries.length, action: "ZIP_REQUESTED" },
+      });
+    }
+
+    const body = streamZip(entries, storage, signal, release);
+    streaming = true;
+    return new NextResponse(body, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": contentDispositionAttachment(`seleccion-${projectId}.zip`),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
     });
-  }
-
-  const archive = new ZipArchive({ zlib: { level: 6 } });
-  const usedNames = new Set<string>();
-
-  for (const photo of photos) {
-    if (!(await storedFileExists(photo.storageKey))) continue;
-
-    const baseName = sanitizeFilename(photo.filename);
-    let name = baseName;
-    let n = 2;
-    while (usedNames.has(name)) {
-      const dot = baseName.lastIndexOf(".");
-      name = dot > 0
-        ? `${baseName.slice(0, dot)}-${n++}${baseName.slice(dot)}`
-        : `${baseName}-${n++}`;
+  } catch (error) {
+    if (error instanceof ZipLimitExceeded) {
+      return NextResponse.json({ error: "export_too_large" }, { status: 413 });
     }
-    usedNames.add(name);
-    archive.append(await openStoredFileStream(photo.storageKey), { name });
+    if (signal.aborted) {
+      return NextResponse.json({ error: "export_timeout" }, { status: 408 });
+    }
+    console.error("ZIP export could not be prepared", error);
+    return NextResponse.json({ error: "export_unavailable" }, { status: 503 });
+  } finally {
+    if (!streaming) release();
   }
-
-  void archive.finalize();
-
-  return new NextResponse(Readable.toWeb(archive) as ReadableStream, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="seleccion-${projectId}.zip"`,
-      "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
 }

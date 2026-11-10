@@ -61,6 +61,7 @@ async function signedFetch(
   method: "GET" | "PUT" | "HEAD" | "DELETE",
   key: string,
   body?: Buffer,
+  signal?: AbortSignal,
 ) {
   const cfg = config();
   const url = objectUrl(cfg, key);
@@ -103,6 +104,7 @@ async function signedFetch(
 
   return fetch(url, {
     method,
+    signal,
     body: method === "PUT" && body ? new Uint8Array(body) : undefined,
     headers: {
       Authorization: authorization,
@@ -129,13 +131,18 @@ export class S3StorageProvider implements StorageProvider {
     return Buffer.from(await response.arrayBuffer());
   }
 
-  async exists(key: string) {
-    const response = await signedFetch("HEAD", key);
-    if (response.status === 404) return false;
+  async size(key: string, signal?: AbortSignal) {
+    const response = await signedFetch("HEAD", key, undefined, signal);
+    if (response.status === 404) return null;
     if (!response.ok) {
       throw new Error(`S3 HEAD failed with ${response.status}.`);
     }
-    return true;
+    const length = response.headers.get("content-length");
+    const size = Number(length);
+    if (length === null || !Number.isSafeInteger(size) || size < 0) {
+      throw new Error("S3 object size is unavailable.");
+    }
+    return size;
   }
 
   async delete(key: string) {
@@ -145,8 +152,8 @@ export class S3StorageProvider implements StorageProvider {
     }
   }
 
-  async openReadStream(key: string) {
-    const response = await signedFetch("GET", key);
+  async openReadStream(key: string, signal?: AbortSignal) {
+    const response = await signedFetch("GET", key, undefined, signal);
     if (!response.ok || !response.body) {
       throw new Error(`S3 stream failed with ${response.status}.`);
     }

@@ -52,15 +52,6 @@ export async function readStoredFile(key: string) {
   return getStorageProvider().get(key);
 }
 
-export async function storedFileExists(key: string) {
-  return getStorageProvider().exists(key);
-}
-
-export async function openStoredFileStream(key: string) {
-  return getStorageProvider().openReadStream(key);
-}
-
-
 export async function removePhotoFiles(keys: string[]) {
   const results = await Promise.allSettled(keys.map((key) => deleteStoredFile(key)));
   if (results.some((result) => result.status === "rejected")) {
