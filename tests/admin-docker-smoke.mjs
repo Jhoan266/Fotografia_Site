@@ -130,7 +130,22 @@ async function login(email, totp) {
   assert.equal(mismatch.r.status, 404);
   const {r:denied}=await page('/api/photos/'+projects[0].id+'/download',client);
   assert([403,404].includes(denied.status));
-  const image=await sharp({create:{width:8,height:8,channels:3,background:'#c5a37d'}}).jpeg().toBuffer();
+  const image=await sharp({create:{width:8,height:6,channels:3,background:'#c5a37d'}}).jpeg().withMetadata({ orientation: 6 }).withExifMerge({ IFD0: { ImageDescription: 'Private capture metadata' } }).toBuffer();
+  assert((await sharp(image).metadata()).exif);
+  const assertDelivery = async (bytes) => {
+    const info = await sharp(bytes).metadata();
+    assert.equal(info.exif, undefined);
+    assert.equal(info.xmp, undefined);
+    assert.equal(info.orientation, undefined);
+    assert.deepEqual([info.width, info.height], [6, 8]);
+  };
+  const firstZipEntry = (bytes) => {
+    const directory = bytes.readUInt32LE(bytes.length - 6);
+    const length = bytes.readUInt32LE(directory + 20);
+    const offset = bytes.readUInt32LE(directory + 42);
+    const start = offset + 30 + bytes.readUInt16LE(offset + 26) + bytes.readUInt16LE(offset + 28);
+    return bytes.subarray(start, start + length);
+  };
   const body=new FormData();body.set('projectId',projects[0].id);body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));body.append('files',new File([image],'qa-photo.jpg',{type:'image/jpeg'}));
   const uploadForm = (files) => {
     const form = new FormData();
@@ -187,7 +202,9 @@ async function login(email, totp) {
     const exported = await exportRequest();
     assert.equal(exported.status, 200);
     assert.equal(exported.headers.get('content-type'), 'application/zip');
-    assert.equal(Buffer.from(await exported.arrayBuffer()).readUInt32LE(0), 0x04034b50);
+    const adminArchive = Buffer.from(await exported.arrayBuffer());
+    assert.equal(adminArchive.readUInt32LE(0), 0x04034b50);
+    assert.deepEqual(firstZipEntry(adminArchive), image);
     assert.equal((await deleteRequest()).status, 403);
     assert.equal((await deleteRequest('https://untrusted.invalid')).status, 403);
     await prisma.authSession.updateMany({
@@ -225,10 +242,17 @@ async function login(email, totp) {
       r=await fetch(base+photoPath+'/comment',{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:text})});assert.equal(r.status,400);
     }
     const gallery=await page(`/es/app/projects/${projects[0].id}`,client);assert.equal(gallery.r.status,200);assert(gallery.html.includes('Comment from client'));
-    r=await fetch(base+photoPath+'/download',{headers:{cookie:client}});assert.equal(r.status,200);assert.deepEqual(Buffer.from(await r.arrayBuffer()),image);
+    r=await fetch(base+photoPath+'/download',{headers:{cookie:client}});assert.equal(r.status,200);await assertDelivery(Buffer.from(await r.arrayBuffer()));
+    const mediaCopy = await fetch(base + '/api/media/' + photo.storageKey, { headers: { cookie: client } });
+    assert.equal(mediaCopy.status, 200);
+    await assertDelivery(Buffer.from(await mediaCopy.arrayBuffer()));
+    const original = await fetch(base + photoPath + '/download', { headers: { cookie: admin } });
+    assert.equal(original.status, 200);
+    assert.deepEqual(Buffer.from(await original.arrayBuffer()), image);
     for(const fallback of ['selection','favorites','all']) {
       zip=await fetch(base+`/api/photos/download-zip?projectId=${projects[0].id}`,{headers:{cookie:client}});assert.equal(zip.status,200);assert.equal(zip.headers.get('content-type'),'application/zip');
       const bytes=Buffer.from(await zip.arrayBuffer());assert.equal(bytes.readUInt32LE(0),0x04034b50);assert(bytes.includes(Buffer.from('qa-photo.jpg')));assert.equal(bytes.readUInt16LE(bytes.length-12),fallback==='all'?2:1,'ZIP contains only the selected/favorite photos before falling back to all');if(fallback==='all') assert(bytes.includes(Buffer.from('qa-photo-2.jpg')),'Duplicate filenames are disambiguated');
+      await assertDelivery(firstZipEntry(bytes));
       if(fallback==='selection') {r=await fetch(base+photoPath+'/select',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).selected,false);}
       if(fallback==='favorites') {r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).favorite,false);}
     }
@@ -284,7 +308,7 @@ async function login(email, totp) {
     assert.equal((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt, null);
     const restored = await fetch(base + photoPath + '/download', { headers: { cookie: client } });
     assert.equal(restored.status, 200);
-    assert.deepEqual(Buffer.from(await restored.arrayBuffer()), image);
+    await assertDelivery(Buffer.from(await restored.arrayBuffer()));
     const restoredGallery = await page(`/es/app/projects/${projectId}`, client);
     assert(restoredGallery.html.includes('Comment from client'));
     const audit = await prisma.photoAuditEvent.findMany({ where: { actorId: ids[0], projectId } });

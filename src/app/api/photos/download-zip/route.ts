@@ -90,7 +90,7 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
       });
     }
 
-    const body = streamZip(entries, storage, signal, release);
+    const body = streamZip(entries, storage, signal, release, user.role === "CLIENT");
     streaming = true;
     return new NextResponse(body, {
       headers: {

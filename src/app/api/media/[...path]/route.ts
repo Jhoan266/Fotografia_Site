@@ -3,6 +3,7 @@ import { readStoredFile } from "@/lib/storage";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import path from "path";
+import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,7 @@ function contentTypeFor(key: string) {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
   const user = await requireUser();
@@ -45,16 +46,20 @@ export async function GET(
   }
 
   try {
-    const data = await readStoredFile(key);
+    const delivered = user.role === "CLIENT" && key === photo.storageKey
+      ? await readDeliveryPhoto(key, request.signal)
+      : null;
+    const data = delivered?.data ?? await readStoredFile(key);
     return new NextResponse(new Uint8Array(data), {
       headers: {
-        "Content-Type": contentTypeFor(key),
+        "Content-Type": delivered ? `image/${delivered.format}` : contentTypeFor(key),
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; sandbox",
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof DeliveryBusy) return NextResponse.json({ error: "delivery_busy" }, { status: 429 });
     return NextResponse.json({ error: "missing_file" }, { status: 404 });
   }
 }

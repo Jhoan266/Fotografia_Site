@@ -1,6 +1,7 @@
 import { ZipArchive } from "archiver";
 import { once } from "node:events";
 import { Readable } from "node:stream";
+import { createDeliveryCopy } from "@/modules/photos/delivery";
 import { sanitizeFilename } from "@/lib/security";
 import type { StorageProvider } from "@/modules/storage/types";
 
@@ -61,6 +62,7 @@ export function streamZip(
   storage: Pick<StorageProvider, "openReadStream">,
   signal: AbortSignal,
   release: () => void,
+  stripMetadata = false,
 ) {
   signal.throwIfAborted();
   const archive = new ZipArchive({ store: true });
@@ -81,7 +83,9 @@ export function streamZip(
     release();
   });
 
-  async function* readEntry(entry: ZipEntry) {
+  let deliveredBytes = 0;
+
+  async function* readStoredEntry(entry: ZipEntry) {
     const input = await storage.openReadStream(entry.key, sourceSignal);
     let remaining = entry.size;
     try {
@@ -95,6 +99,18 @@ export function streamZip(
     } finally {
       input.destroy();
     }
+  }
+
+  async function* readEntry(entry: ZipEntry) {
+    const input = readStoredEntry(entry);
+    if (!stripMetadata) {
+      yield* input;
+      return;
+    }
+    const { data } = await createDeliveryCopy(input, sourceSignal);
+    deliveredBytes += data.byteLength;
+    if (deliveredBytes > MAX_ZIP_BYTES) throw new ZipLimitExceeded();
+    yield data;
   }
 
   void (async () => {
