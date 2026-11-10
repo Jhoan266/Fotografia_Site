@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { endSession, startSession } from "@/lib/session";
 import { clearRateLimit, rateLimit } from "@/lib/rate-limit";
 
 export type LoginState = {
@@ -61,14 +61,12 @@ export async function loginAction(
 
   await Promise.all([clearRateLimit(emailLimitKey), clearRateLimit(ipLimitKey)]);
 
-  const session = await getSession();
-  session.user = {
+  await startSession({
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
-  };
-  await session.save();
+  });
 
   if (user.role === "ADMIN") {
     redirect(`/${locale}/admin`);
@@ -78,8 +76,7 @@ export async function loginAction(
 
 export async function logoutAction(locale = "es") {
   const safeLocale = locales.has(locale) ? locale : "es";
-  const session = await getSession();
-  session.destroy();
+  await endSession();
   redirect(`/${safeLocale}/login`);
 }
 
