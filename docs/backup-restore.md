@@ -146,3 +146,17 @@ El alcance son las claves y los bytes de los objetos vigentes. Las versiones
 históricas, políticas de acceso, cifrado del proveedor y restauración de
 PostgreSQL en el mismo punto de corte deben verificarse por separado con el
 proveedor de producción.
+
+### Simulacro conjunto de PostgreSQL y S3
+
+El mismo comando ejecuta también las migraciones SQL del repositorio en un
+PostgreSQL de origen y crea un cliente, un proyecto y dos fotos ficticias.
+Las escrituras de prueba terminan antes del volcado y de la copia del bucket.
+Después de detener ambos orígenes, el simulacro restaura PostgreSQL en una
+base vacía y verifica que las claves referenciadas coincidan con el inventario
+S3 restaurado, que se conserve la relación con el cliente y que solo la foto
+esperada siga en la papelera.
+
+La prueba se ejecuta con PostgreSQL 16 y SeaweedFS aislados. Aún queda por
+verificar el punto de corte, las credenciales y las políticas con los servicios
+reales de producción.
