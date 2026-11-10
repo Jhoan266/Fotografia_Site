@@ -4,10 +4,12 @@ import { readStoredFile } from "@/lib/storage";
 import { contentDispositionAttachment } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
 
+import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
+
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   const user = await requireUser();
@@ -22,16 +24,18 @@ export async function GET(
   }
 
   try {
-    const data = await readStoredFile(photo.storageKey);
+    const delivered = user.role === "CLIENT" ? await readDeliveryPhoto(photo.storageKey, request.signal) : null;
+    const data = delivered?.data ?? await readStoredFile(photo.storageKey);
     return new NextResponse(new Uint8Array(data), {
       headers: {
-        "Content-Type": "application/octet-stream",
+        "Content-Type": delivered ? `image/${delivered.format}` : "application/octet-stream",
         "Content-Disposition": contentDispositionAttachment(photo.filename),
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof DeliveryBusy) return NextResponse.json({ error: "delivery_busy" }, { status: 429 });
     return NextResponse.json({ error: "missing_file" }, { status: 404 });
   }
 }
