@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:host": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "prisma generate && next build",
-    "build:hostinger": "prisma migrate deploy && node scripts/bootstrap-admin.mjs && npm run build",
+    "build:hostinger": "prisma migrate deploy && node scripts/bootstrap-admin.mjs && prisma generate && next build --webpack",
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
