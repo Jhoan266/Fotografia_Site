@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 
-export function loginSource(headers: Pick<Headers, "get">, token: string | undefined, appUrl: string | undefined) {
+export function loginSource(headers: Pick<Headers, "get">, token: string | undefined, appUrl: string | undefined, managedHosting = false) {
   if (!token) {
     const url = URL.parse(appUrl || "http://localhost");
-    const allowed = url?.protocol === "http:" &&
+    const local = url?.protocol === "http:" &&
       ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    const allowed = local || (managedHosting && url?.protocol === "https:");
     return { allowed, ip: null };
   }
 
