@@ -23,3 +23,10 @@ test("only accepts a single IP supplied by the authenticated proxy", () => {
   headers.set("x-studio-proxy-token", "wrong");
   assert.equal(loginSource(headers, token, https).allowed, false);
 });
+
+test("managed HTTPS login is explicit and ignores untrusted client IP headers", () => {
+  const headers = new Headers({ "x-forwarded-for": "192.0.2.10", "x-studio-client-ip": "192.0.2.11" });
+  assert.deepEqual(loginSource(headers, undefined, https, true), { allowed: true, ip: null });
+  assert.equal(loginSource(headers, undefined, "http://studio.example.invalid", true).allowed, false);
+  assert.equal(loginSource(headers, token, https, true).allowed, false);
+});

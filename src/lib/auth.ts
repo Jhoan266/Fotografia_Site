@@ -34,7 +34,8 @@ export async function loginAction(
     return { error: "invalid" };
   }
 
-  const source = loginSource(await headers(), process.env.TRUSTED_PROXY_TOKEN, process.env.NEXT_PUBLIC_APP_URL);
+  const source = loginSource(await headers(), process.env.TRUSTED_PROXY_TOKEN, process.env.NEXT_PUBLIC_APP_URL,
+    process.env.MANAGED_HOSTING_LOGIN === "true");
   if (!source.allowed) return { error: "invalid" };
 
   const emailLimitKey = loginKey("login-email", email);
