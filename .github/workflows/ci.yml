@@ -64,6 +64,15 @@ jobs:
       - name: Apply migrations
         run: npx prisma migrate deploy
 
+      - name: Provision a test administrator
+        env:
+          BOOTSTRAP_ADMIN_EMAIL: qa-bootstrap@example.invalid
+          BOOTSTRAP_ADMIN_PASSWORD: fixture-only-not-for-production
+          ADMIN_TOTP_SECRETS: '{"qa-bootstrap@example.invalid":"GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"}'
+        run: |
+          node scripts/bootstrap-admin.mjs
+          node scripts/bootstrap-admin.mjs
+
       - name: Lint
         run: npm run lint
 
