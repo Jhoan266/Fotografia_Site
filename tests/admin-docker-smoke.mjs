@@ -359,6 +359,88 @@ async function login(email, totp) {
   await nextExport.arrayBuffer();
   console.log('PASS ZIP photo count limit for both roles and slot release after rejection');
 
+
+  const editorialId = 'es/hero';
+  const heroValues = {
+    location: 'Barcelona', brand: 'Editorial fixture', specialty: 'Fotografia',
+    tagline: 'Private editorial draft', subtitle: 'Draft text',
+    ctaWhatsapp: 'Contacto', ctaPortfolio: 'Portfolio',
+  };
+  const editorialPath = base + '/api/editorial/es/hero';
+  const edit = async (cookie, payload) => fetch(editorialPath, {
+    method: 'POST', headers: { cookie, Origin: base, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  try {
+    assert.equal((await page('/es/studio', client)).r.status, 307);
+    assert.equal((await edit(client, { action: 'save', revision: 0, values: heroValues })).status, 401);
+    await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: true } });
+    const studioPage = await page('/es/studio', client);
+    assert.equal(studioPage.r.status, 200);
+    assert.equal((await page('/es/studio/present')).r.status, 307);
+    let edited = await edit(client, { action: 'save', revision: 0, values: heroValues });
+    assert.equal(edited.status, 200);
+    assert.equal((await edited.json()).revision, 1);
+    assert(!(await page('/es')).html.includes('Private editorial draft'));
+    assert((await page('/es/studio/present', client)).html.includes('Private editorial draft'));
+    assert.equal((await edit(client, { action: 'publish', revision: 1 })).status, 409);
+    assert.equal((await edit(admin, { action: 'save', revision: 0, values: heroValues })).status, 409);
+    const concurrent = await Promise.all([
+      edit(client, { action: 'save', revision: 1, values: { ...heroValues, subtitle: 'Concurrent edit' } }),
+      edit(client, { action: 'save', revision: 1, values: { ...heroValues, subtitle: 'Concurrent edit' } }),
+    ]);
+    assert.deepEqual(concurrent.map(response => response.status).sort(), [200, 409]);
+    assert.equal((await edit(admin, { action: 'publish', revision: 1 })).status, 409);
+    assert.equal((await edit(admin, { action: 'publish', revision: 2 })).status, 200);
+    assert((await page('/es')).html.includes('Private editorial draft'));
+    const firstRevision = await prisma.editorialRevision.findFirst({ where: { moduleId: editorialId, revision: 1 } });
+    assert(firstRevision);
+    assert.equal((await edit(admin, { action: 'restore', revision: 3, historyId: firstRevision.id })).status, 200);
+    const restored = await prisma.editorialModule.findUnique({ where: { id: editorialId } });
+    assert.equal(restored.draft.subtitle, 'Draft text');
+    assert.equal(restored.published.subtitle, 'Concurrent edit');
+
+    const imageForm = new FormData();
+    imageForm.set('file', new File([image], 'editorial.jpg', { type: 'image/jpeg' }));
+    const assetResponse = await fetch(base + '/api/editorial/assets', { method: 'POST', headers: { cookie: client, Origin: base }, body: imageForm });
+    assert.equal(assetResponse.status, 200);
+    const { url } = await assetResponse.json();
+    const assetId = url.split('/').at(-1);
+    const asset = await prisma.editorialAsset.findUniqueOrThrow({ where: { id: assetId } });
+    try {
+      assert.equal((await page(url)).r.status, 404);
+      assert.equal((await page(url, client)).r.status, 200);
+      await prisma.editorialModule.create({ data: { id: 'es/media', draft: {}, published: { heroImage: url } } });
+      assert.equal((await page(url)).r.status, 200);
+      await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: false } });
+      assert.equal((await page('/es/studio/present', client)).r.status, 307);
+    } finally {
+      const storageRoot = process.env.STORAGE_LOCAL_PATH || '/app/storage';
+      const { unlink } = await import('node:fs/promises');
+      await unlink(storageRoot + '/' + asset.storageKey);
+      await prisma.editorialAsset.delete({ where: { id: assetId } });
+    }
+    const launch = async (cookie, payload) => fetch(base + '/api/editorial/es/launch', {
+      method: 'POST', headers: { cookie, Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const launchValues = { publicMode: 'coming-soon', comingSoon: 'Editorial launch fixture', contactEnabled: 'false' };
+    assert.equal((await launch(admin, { action: 'save', revision: 0, values: launchValues })).status, 200);
+    assert.equal((await launch(admin, { action: 'publish', revision: 1 })).status, 200);
+    assert((await page('/es')).html.includes('Editorial launch fixture'));
+    assert(!(await page('/es')).html.includes('Private editorial draft'));
+    assert((await page('/es/studio/present', admin)).html.includes('Private editorial draft'));
+    const preview = await page('/es/studio/preview', admin);
+    assert.equal(preview.r.headers.get('x-frame-options'), 'SAMEORIGIN');
+    assert(preview.r.headers.get('cache-control').includes('no-store'));
+    assert(preview.html.includes('Escritorio') && preview.html.includes('Tablet') && preview.html.includes('Actualizar'));
+    assert((await page('/es/studio/present', admin)).html.includes('Galería de demostración'));
+    console.log('PASS editorial designer permissions, private drafts, concurrent save, publication, restore and asset privacy');
+  } finally {
+    await prisma.editorialRevision.deleteMany({ where: { moduleId: { in: [editorialId, 'es/launch'] } } });
+    await prisma.editorialModule.deleteMany({ where: { id: { in: [editorialId, 'es/media', 'es/launch'] } } });
+    await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: false } });
+  }
+
   const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
   assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);

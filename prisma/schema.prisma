@@ -31,6 +31,7 @@ enum OrderStatus {
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
+  editorialDesigner Boolean @default(false)
   passwordHash  String
   lastTotpStep  Int?
   name          String
@@ -198,4 +199,31 @@ model PhotoAuditEvent {
   createdAt  DateTime         @default(now())
 
   @@index([projectId, createdAt])
+}
+
+model EditorialModule {
+  id String @id
+  revision Int @default(0)
+  draft Json
+  published Json?
+  updatedAt DateTime @updatedAt
+}
+
+model EditorialRevision {
+  id String @id @default(cuid())
+  moduleId String
+  revision Int
+  action String
+  actorId String
+  content Json
+  createdAt DateTime @default(now())
+  @@index([moduleId, createdAt])
+}
+
+model EditorialAsset {
+  id String @id @default(cuid())
+  storageKey String @unique
+  mime String
+  filename String
+  createdAt DateTime @default(now())
 }

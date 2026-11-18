@@ -46,6 +46,7 @@ export default async function AdminLayout({
             vault: t("vault.title"),
           }}
         />
+        <Link href={`/${locale}/studio`} className="studio-nav-link ds-focus"><StudioIcon name="projects" />Estudio de contenido</Link>
         <div className="studio-sidebar-bottom">
           <div className="studio-sidebar-note">
             <span className="section-label">{t("studio.yourSpace")}</span>

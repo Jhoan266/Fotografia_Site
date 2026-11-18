@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { aboutImage, brand } from "@/lib/content";
+import { useEditorial } from "./EditorialContext";
 
 export function ServicesSection() {
   const t = useTranslations("services");
@@ -30,11 +30,12 @@ export function ServicesSection() {
 
 export function AboutSection() {
   const t = useTranslations("about");
+  const { media } = useEditorial();
   return (
     <section id="sobre-mi" className="mx-auto grid max-w-7xl gap-10 px-5 py-24 md:grid-cols-2 md:px-8">
       <div className="relative min-h-[420px] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={aboutImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={media.aboutImage} alt={media.aboutAlt} className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="flex flex-col justify-center">
         <p className="section-label">{t("label")}</p>
@@ -69,6 +70,7 @@ export function ProcessSection() {
 
 export function ContactSection() {
   const t = useTranslations("contact");
+  const { channels: brand, contactEnabled } = useEditorial();
   const wa = `https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(brand.whatsappMessage)}`;
   return (
     <section id="contacto" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
@@ -78,14 +80,14 @@ export function ContactSection() {
           {t("title")}
         </h2>
         <p className="mt-4 max-w-lg text-white/65">{t("body")}</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {contactEnabled && <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <a href={wa} target="_blank" rel="noreferrer" className="btn-wa">
             {t("cta")}
           </a>
           <a href={`mailto:${brand.email}`} className="text-sm text-sand hover:underline">
             {brand.email}
           </a>
-        </div>
+        </div>}
       </div>
     </section>
   );
