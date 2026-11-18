@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
-import { brand } from "@/lib/content";
+import { useEditorial } from "./EditorialContext";
 
 export function SiteHeader({ locale }: { locale: string }) {
   const t = useTranslations("nav");
+  const { channels: brand, contactEnabled } = useEditorial();
   const wa = `https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(brand.whatsappMessage)}`;
 
   const links = [
@@ -37,9 +38,9 @@ export function SiteHeader({ locale }: { locale: string }) {
           >
             {t("clientArea")}
           </Link>
-          <a href={wa} target="_blank" rel="noreferrer" className="btn-wa !py-2 !text-xs">
+          {contactEnabled && <a href={wa} target="_blank" rel="noreferrer" className="btn-wa !py-2 !text-xs">
             {t("whatsapp")}
-          </a>
+          </a>}
         </div>
       </div>
     </header>

@@ -4,14 +4,18 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { gallery, GalleryItem } from "@/lib/content";
 
+import { useEditorial } from "./EditorialContext";
+
 export function PortfolioMosaic() {
+  const { media } = useEditorial();
+  const editableGallery = useMemo(() => gallery.map(item => ({ ...item, src: media[item.id + "Image"] ?? item.src, alt: media[item.id + "Alt"] ?? item.alt })), [media]);
   const t = useTranslations("portfolio");
   const [filter, setFilter] = useState<"all" | GalleryItem["category"]>("all");
   const [active, setActive] = useState<GalleryItem | null>(null);
 
   const items = useMemo(
-    () => (filter === "all" ? gallery : gallery.filter((g) => g.category === filter)),
-    [filter],
+    () => (filter === "all" ? editableGallery : editableGallery.filter((g) => g.category === filter)),
+    [filter, editableGallery],
   );
 
   const filters = [

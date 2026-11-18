@@ -15,6 +15,7 @@ export default async function middleware(request: NextRequest) {
   const pathWithoutLocale = pathname.replace(/^\/(es|en|fr)/, "") || "/";
 
   const needsAuth =
+    pathWithoutLocale.startsWith("/studio") ||
     pathWithoutLocale.startsWith("/app") ||
     pathWithoutLocale.startsWith("/admin");
 

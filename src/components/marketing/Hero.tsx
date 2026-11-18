@@ -1,17 +1,19 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { brand, heroImage } from "@/lib/content";
+import { useEditorial } from "./EditorialContext";
 
 export function Hero() {
   const t = useTranslations("hero");
+  const { media } = useEditorial();
+  const { channels: brand, contactEnabled } = useEditorial();
   const wa = `https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(brand.whatsappMessage)}`;
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden">
-      <div
+      <div role="img" aria-label={media.heroAlt}
         className="absolute inset-0 scale-105 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
+        style={{ backgroundImage: `url(${media.heroImage})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
@@ -38,10 +40,10 @@ export function Hero() {
           {t("subtitle")}
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <a href={wa} target="_blank" rel="noreferrer" className="btn-wa">
+          {contactEnabled && <a href={wa} target="_blank" rel="noreferrer" className="btn-wa">
             <WhatsAppIcon />
             {t("ctaWhatsapp")}
-          </a>
+          </a>}
           <a href="#portafolio" className="btn-ghost">
             {t("ctaPortfolio")}
             <span aria-hidden>↓</span>
@@ -49,7 +51,7 @@ export function Hero() {
         </div>
       </div>
 
-      <a
+      {contactEnabled && <a
         href={wa}
         target="_blank"
         rel="noreferrer"
@@ -57,7 +59,7 @@ export function Hero() {
         aria-label="WhatsApp"
       >
         <WhatsAppIcon />
-      </a>
+      </a>}
     </section>
   );
 }

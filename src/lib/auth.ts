@@ -88,6 +88,7 @@ export async function loginAction(
   if (user.role === "ADMIN") {
     redirect(`/${locale}/admin`);
   }
+  if (user.editorialDesigner) redirect(`/${locale}/studio`);
   redirect(`/${locale}/app`);
 }
 
