@@ -1,10 +1,12 @@
 // Run against an isolated local Docker web service configured with the dedicated MFA fixture.
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import sharp from 'sharp';
+import { createRequire } from 'node:module';
+const { encodeReply } = createRequire(import.meta.url)('next/dist/compiled/react-server-dom-webpack/client.node');
 const prisma = new PrismaClient();
 const base = 'http://localhost:3000';
 assert.equal(process.env.ALLOW_LOCAL_SMOKE, '1', 'Explicit local smoke-test opt-in required');
@@ -77,7 +79,7 @@ async function login(email, totp) {
   const unconfiguredLogin = await attemptLogin(unconfigured.email,fixtureCode(Math.floor(Date.now()/30_000)));
   assert.notEqual(unconfiguredLogin.status,303);
   assert.equal(unconfiguredLogin.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
-  const code = fixtureCode(Math.floor(Date.now()/30_000)-1);
+  const code = fixtureCode(Math.floor(Date.now()/30_000));
   const admin=await login(adminEmail,code);
   {
    const replay = await attemptLogin(adminEmail,code);
@@ -290,6 +292,55 @@ async function login(email, totp) {
     }
     console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
 
+    const settingsPage = `/es/admin/projects/${projectId}`;
+    const settingsHtml = (await page(settingsPage, admin)).html;
+    assert(settingsHtml.includes('id="gallery-delivery-settings"'), 'Delivery settings are integrated into the existing project panel');
+    const manifest = JSON.parse(await readFile('.next/server/server-reference-manifest.json', 'utf8'));
+    const actionId = Object.entries(manifest.node).find(([, entry]) => entry.exportedName === 'updateDeliverySettings')?.[0];
+    assert(actionId);
+    const settings = async (cookie, downloads, expiresOn = '') => {
+      const form = new FormData();
+      if (downloads) form.set('downloadsEnabled', 'on');
+      form.set('expiresOn', expiresOn);
+      const response = await fetch(base + settingsPage, {
+        method: 'POST', headers: { cookie, Origin: base, 'Next-Action': actionId },
+        body: await encodeReply(['es', projectId, form]), redirect: 'manual',
+      });
+      const responseText = await response.text();
+      assert.equal(response.status, cookie === admin ? 200 : 307, responseText.slice(-300));
+    };
+    await settings(client, false);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, true);
+    await settings(admin, false);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, false);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 403);
+    assert.equal((await page(adminZip, client)).r.status, 403);
+    assert.equal((await page('/api/media/' + photo.storageKey, client)).r.status, 403);
+    assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 200);
+    const reviewGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert.equal(reviewGallery.r.status, 200);
+    assert(!reviewGallery.html.includes('/api/photos/download-zip?'));
+    assert.equal((await page(photoPath + '/download', admin)).r.status, 200);
+    await settings(admin, true, '2000-01-01');
+    assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 403);
+    const expiredDownload = (await page(photoPath + '/download', client)).r;
+    assert.equal(expiredDownload.status, 404);
+    assert(expiredDownload.headers.get('cache-control')?.includes('no-store'), 'Denied files must not be cached across gallery reopening');
+    assert.equal((await page(adminZip, client)).r.status, 403);
+    assert.equal((await page(`/es/app/projects/${projectId}`, client)).r.status, 307);
+    assert(!(await page('/es/app', client)).html.includes(`/es/app/projects/${projectId}`));
+    for (const operation of ['favorite', 'select', 'comment']) {
+      assert.equal((await fetch(base + photoPath + '/' + operation, {
+        method: 'POST', headers: jsonHeaders, body: JSON.stringify({ body: 'Expired gallery' }),
+      })).status, 403);
+    }
+    assert.equal((await page('/api/media/' + photo.thumbKey, admin)).r.status, 200);
+    await settings(admin, true);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).expiresAt, null);
+    assert.equal((await page(`/es/app/projects/${projectId}`, client)).r.status, 200);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 200);
+    console.log('PASS integrated delivery settings: admin-only updates, review-only downloads, expiry on every client route, reopening and preserved photographer access');
+
     const restorePath = `/api/photos/${photoId}/restore`;
     const restore = (cookie, origin = base) => fetch(base + restorePath, {
       method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
@@ -455,7 +506,7 @@ async function login(email, totp) {
     await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: false } });
   }
 
-  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
+  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)+1));
   assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);
   assert.equal(logoutPage.r.status, 200);

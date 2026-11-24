@@ -4,6 +4,7 @@ import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/sessi
 import { getStorageProvider } from "@/modules/storage";
 import { MAX_ZIP_PHOTOS, ZIP_TIMEOUT_MS, ZipLimitExceeded, planZip, reserveZipExport, streamZip } from "@/modules/photos/zip-export";
 import { contentDispositionAttachment, hasValidSameOrigin } from "@/lib/security";
+import { canDownloadGallery } from "@/modules/projects/delivery-policy";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,7 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
 
   if (
     user.role === "CLIENT" &&
-    (project.client.userId !== user.id || project.status !== "DELIVERED")
+    (project.client.userId !== user.id || !canDownloadGallery(project))
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

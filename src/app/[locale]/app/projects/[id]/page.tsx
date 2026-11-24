@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { requireUser } from "@/lib/session";
 import { createProjectOrder } from "@/modules/orders/actions";
 import { getClientProjectGallery } from "@/modules/projects/gallery-queries";
+import { isGalleryAvailable } from "@/modules/projects/delivery-policy";
 
 export default async function ProjectGalleryPage({
   params,
@@ -24,7 +25,7 @@ export default async function ProjectGalleryPage({
   if (!project) notFound();
   if (
     user.role === "CLIENT" &&
-    (project.client.userId !== user.id || project.status !== "DELIVERED")
+    (project.client.userId !== user.id || !isGalleryAvailable(project))
   )
     redirect(`/${locale}/app`);
   const photos = project.photos.map((photo) => ({
@@ -93,7 +94,8 @@ export default async function ProjectGalleryPage({
           </div>
           <p>{p("galleryInstructions")}</p>
         </div>
-        <GalleryClient locale={locale} projectId={project.id} photos={photos} />
+        <GalleryClient locale={locale} projectId={project.id} photos={photos}
+          downloadsEnabled={user.role === "ADMIN" || project.downloadsEnabled} />
       </section>
       {project.packs.length > 0 && (
         <section className="portal-albums">

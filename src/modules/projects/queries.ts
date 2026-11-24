@@ -33,6 +33,7 @@ export function listDeliveredProjectsForClient(userId: string) {
     where: {
       status: "DELIVERED",
       client: { userId },
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
     },
     include: { _count: { select: { photos: { where: { trashedAt: null } } } } },
     orderBy: [{ sessionDate: "desc" }, { createdAt: "desc" }],
