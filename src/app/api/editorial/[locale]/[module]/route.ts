@@ -23,11 +23,16 @@ export async function POST(
   }
   if (!body || typeof body !== "object" || Array.isArray(body))
     return NextResponse.json({ ok: false }, { status: 400 });
+  if (!("revision" in body) || typeof body.revision !== "number" ||
+      !("action" in body) || typeof body.action !== "string")
+    return NextResponse.json({ ok: false }, { status: 400 });
   if (JSON.stringify(body).length > 120_000)
     return NextResponse.json({ ok: false }, { status: 413 });
   const params = await context.params;
   const result = await changeEditorial({
     ...body,
+    revision: body.revision,
+    action: body.action,
     locale: params.locale,
     module: params.module,
   });
