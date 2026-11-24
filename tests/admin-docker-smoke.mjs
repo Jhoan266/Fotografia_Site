@@ -306,8 +306,8 @@ async function login(email, totp) {
         method: 'POST', headers: { cookie, Origin: base, 'Next-Action': actionId },
         body: await encodeReply(['es', projectId, form]), redirect: 'manual',
       });
-      await response.text();
-      assert([200, 303].includes(response.status));
+      const responseText = await response.text();
+      assert.equal(response.status, cookie === admin ? 200 : 307, responseText.slice(-300));
     };
     await settings(client, false);
     assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, true);
