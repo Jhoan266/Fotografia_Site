@@ -97,6 +97,8 @@ export default async function ProjectGalleryPage({
           <p>{p("galleryInstructions")}</p>
         </div>
         <GalleryClient locale={locale} projectId={project.id} photos={photos}
+          selectionVersion={project.selectionVersion} selectionConfirmedAt={project.selectionConfirmedAt?.toISOString() ?? null}
+          canConfirm={user.role === "CLIENT"}
           albums={project.albums.map(a => ({ id: a.id, name: a.name }))}
           downloadsEnabled={user.role === "ADMIN" || project.downloadsEnabled} />
       </section>

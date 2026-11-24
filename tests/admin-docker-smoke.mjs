@@ -334,6 +334,70 @@ async function login(email, totp) {
     await organize({ action: 'cover', photoId: null });
     console.log('PASS albums: admin-only CRUD, cross-session rejection and database constraint, saved ordering, localized galleries, cover, and deletion without file or comment loss');
 
+    const selectionPath = `/api/projects/${projectId}/selection`;
+    const confirmation = (payload, cookie = client, origin = base) => fetch(base + selectionPath, {
+      method: 'POST', headers: { cookie, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const otherClient = await prisma.user.create({ data: { email: `${tag}-other@example.invalid`, name: tag, role: 'CLIENT', passwordHash: hash } });
+    ids.push(otherClient.id);
+    const otherCookie = await login(otherClient.email);
+    const selectedAgain = await fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders });
+    assert.equal((await selectedAgain.json()).selected, true);
+    const version = (await prisma.project.findUnique({ where: { id: projectId } })).selectionVersion;
+    const payload = { version, photoIds: [photoId] };
+    assert.equal((await confirmation(payload, '')).status, 401);
+    assert.equal((await confirmation(payload, otherCookie)).status, 403);
+    assert.equal((await confirmation(payload, admin)).status, 403);
+    assert.equal((await confirmation(payload, client, 'https://untrusted.invalid')).status, 403);
+    assert.equal((await confirmation({ version, photoIds: [] })).status, 400);
+    assert.equal((await confirmation({ ...payload, version: version - 1 })).status, 409);
+    assert.equal((await confirmation({ version, photoIds: upload.ids })).status, 409);
+    const confirmed = await Promise.all([confirmation(payload), confirmation(payload)]);
+    assert.deepEqual(confirmed.map(r => r.status).sort(), [200, 409]);
+    assert.equal(await prisma.selectionSubmission.count({ where: { projectId } }), 1);
+    const snapshot = await prisma.selectionSubmission.findFirst({ where: { projectId } });
+    assert.deepEqual(snapshot.items.map(p => p.id), [photoId]);
+    assert.equal((await fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders })).status, 409);
+    assert.equal((await page(selectionPath + '?format=csv', client)).r.status, 401);
+    assert.equal((await page(selectionPath + '?format=txt')).r.status, 401);
+    const csv = await page(selectionPath + '?format=csv', admin);
+    assert.equal(csv.r.status, 200); assert(csv.html.includes(photoId) && csv.html.includes(photo.filename));
+    assert(!csv.html.includes(photo.storageKey));
+    assert(csv.r.headers.get('cache-control').includes('no-store'));
+    assert.equal((await page(selectionPath + '?format=txt', admin)).html.trim(), photo.filename);
+    assert.equal((await confirmation({ action: 'reopen', version }, client)).status, 403);
+    assert.equal((await confirmation({ action: 'reopen', version: version - 1 }, admin)).status, 409);
+    assert.equal((await confirmation({ action: 'reopen', version }, admin)).status, 200);
+    assert.equal((await page(selectionPath, admin)).r.status, 409);
+    const toggles = await Promise.all([
+      fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders }),
+      fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders }),
+    ]);
+    assert(toggles.every(r => r.status === 200));
+    assert.equal(await prisma.selection.count({ where: { userId: ids[1], photoId } }), 1);
+    const currentVersion = (await prisma.project.findUnique({ where: { id: projectId } })).selectionVersion;
+    assert.equal((await confirmation({ version: currentVersion, photoIds: [photoId] })).status, 200);
+    assert.equal(await prisma.selectionSubmission.count({ where: { projectId } }), 2);
+    assert.deepEqual((await prisma.selectionSubmission.findUnique({ where: { id: snapshot.id } })).items, snapshot.items);
+    assert.equal((await confirmation({ action: 'reopen', version: currentVersion }, admin)).status, 200);
+    const clearSelection = await fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders });
+    assert.equal((await clearSelection.json()).selected, false);
+    await fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders });
+    const raceVersion = (await prisma.project.findUnique({ where: { id: projectId } })).selectionVersion;
+    const [raceConfirm, raceToggle] = await Promise.all([
+      confirmation({ version: raceVersion, photoIds: [photoId] }),
+      fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders }),
+    ]);
+    assert([200, 409].includes(raceConfirm.status));
+    assert.deepEqual([raceConfirm.status, raceToggle.status].sort(), [200, 409]);
+    const afterRace = await prisma.project.findUnique({ where: { id: projectId } });
+    if (afterRace.selectionConfirmedAt) {
+      assert.equal(await prisma.selection.count({ where: { userId: ids[1], photoId } }), 1);
+      await confirmation({ action: 'reopen', version: afterRace.selectionVersion }, admin);
+      await fetch(base + photoPath + '/select', { method: 'POST', headers: jsonHeaders });
+    }
+    console.log('PASS final selection: permissions, stale and wrong-set rejection, concurrent confirmation/toggles, immutable snapshots, CSV/TXT exports and admin reopening');
+
     const settingsPage = `/es/admin/projects/${projectId}`;
     const settingsHtml = (await page(settingsPage, admin)).html;
     assert(settingsHtml.includes('id="gallery-delivery-settings"'), 'Delivery settings are integrated into the existing project panel');
@@ -364,6 +428,8 @@ async function login(email, totp) {
     assert(!reviewGallery.html.includes('/api/photos/download-zip?'));
     assert.equal((await page(photoPath + '/download', admin)).r.status, 200);
     await settings(admin, true, '2000-01-01');
+    const expiredVersion = (await prisma.project.findUnique({ where: { id: projectId } })).selectionVersion;
+    assert.equal((await confirmation({ version: expiredVersion, photoIds: [photoId] })).status, 403);
     assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 403);
     const expiredDownload = (await page(photoPath + '/download', client)).r;
     assert.equal(expiredDownload.status, 404);

@@ -14,6 +14,7 @@ export function getProjectForAdmin(projectId: string) {
   return prisma.project.findUnique({
     where: { id: projectId },
     include: {
+      selectionSubmissions: { orderBy: { version: "desc" }, take: 1 },
       albums: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
       client: { include: { user: true } },
       photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },

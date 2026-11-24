@@ -65,6 +65,9 @@ model Project {
   coverPhotoId String?
   coverPhoto Photo? @relation("GalleryCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
   albums GalleryAlbum[]
+  selectionVersion Int @default(0)
+  selectionConfirmedAt DateTime?
+  selectionSubmissions SelectionSubmission[]
   title       String
   description String?
   sessionDate DateTime?
@@ -76,6 +79,17 @@ model Project {
   orders      Order[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+model SelectionSubmission {
+  id String @id @default(cuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId String
+  version Int
+  items Json
+  createdAt DateTime @default(now())
+  @@unique([projectId, version])
 }
 
 model Photo {
