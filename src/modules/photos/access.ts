@@ -1,5 +1,6 @@
 import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isGalleryAvailable } from "@/modules/projects/delivery-policy";
 
 export type AccessUser = {
   id: string;
@@ -23,7 +24,7 @@ export async function getAccessiblePhoto(user: AccessUser, photoId: string) {
 
   const canAccess =
     photo.project.client.userId === user.id &&
-    photo.project.status === "DELIVERED";
+    isGalleryAvailable(photo.project);
 
   return canAccess ? photo : null;
 }

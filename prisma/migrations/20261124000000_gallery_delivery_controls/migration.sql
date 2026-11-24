@@ -1,0 +1,3 @@
+ALTER TABLE "Project"
+ADD COLUMN "downloadsEnabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "expiresAt" TIMESTAMP(3);

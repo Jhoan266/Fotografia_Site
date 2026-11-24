@@ -3,6 +3,7 @@ import { readStoredFile } from "@/lib/storage";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import path from "path";
+import { isGalleryAvailable } from "@/modules/projects/delivery-policy";
 import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 
 export const runtime = "nodejs";
@@ -40,7 +41,8 @@ export async function GET(
 
   if (
     user.role === "CLIENT" &&
-    (photo.project.client.userId !== user.id || photo.project.status !== "DELIVERED")
+    (photo.project.client.userId !== user.id || !isGalleryAvailable(photo.project) ||
+      (key === photo.storageKey && !photo.project.downloadsEnabled))
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

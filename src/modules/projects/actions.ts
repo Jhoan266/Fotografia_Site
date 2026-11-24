@@ -4,6 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
+import { parseGalleryExpiry } from "./delivery-policy";
+
+export async function updateDeliverySettings(locale: string, projectId: string, formData: FormData) {
+  if (!(await requireRole("ADMIN"))) return { ok: false, error: "unauthorized" };
+  const expiresAt = parseGalleryExpiry(String(formData.get("expiresOn") || ""));
+  if (expiresAt === undefined) return { ok: false, error: "invalid_date" };
+  const result = await prisma.project.updateMany({
+    where: { id: projectId },
+    data: { downloadsEnabled: formData.get("downloadsEnabled") === "on", expiresAt },
+  });
+  if (!result.count) return { ok: false, error: "not_found" };
+  revalidatePath(`/${locale}/admin/projects/${projectId}`);
+  revalidatePath(`/${locale}/app`, "layout");
+  return { ok: true };
+}
 
 export async function createProjectFromForm(locale: string, formData: FormData) {
   const admin = await requireRole("ADMIN");

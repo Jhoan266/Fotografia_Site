@@ -5,7 +5,7 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
 import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
-import { publishProject } from "@/modules/projects/actions";
+import { publishProject, updateDeliverySettings } from "@/modules/projects/actions";
 import { getProjectForAdmin } from "@/modules/projects/queries";
 
 export default async function AdminProjectDetailPage({
@@ -21,6 +21,9 @@ export default async function AdminProjectDetailPage({
   const project = await getProjectForAdmin(id);
   if (!project) notFound();
   const format = await getFormatter();
+  const expiresOn = project.expiresAt
+    ? new Date(project.expiresAt.getTime() - 86_400_000).toISOString().slice(0, 10)
+    : "";
   const activePhotos = project.photos.filter((photo) => photo.trashedAt === null);
   const trashedPhotos = project.photos.flatMap(({ id, filename, trashedAt }) => trashedAt ? [
     { id, filename, trashedAt: format.dateTime(trashedAt, { dateStyle: "medium" }) },
@@ -41,6 +44,23 @@ export default async function AdminProjectDetailPage({
             <Button type="submit" disabled={project.status === "DELIVERED"}>{t("publish")}</Button>
           </ActionForm>
         </div>
+
+        <ActionForm id="gallery-delivery-settings"
+          action={updateDeliverySettings.bind(null, locale, id)}
+          className="ds-card mt-8 space-y-5 p-5 md:p-6">
+          <h2 className="font-display text-2xl">{t("deliverySettings")}</h2>
+          <p className="max-w-2xl text-sm leading-relaxed text-white/65">{t("deliverySettingsHelp")}</p>
+          <label className="flex items-start gap-3 text-sm">
+            <input className="mt-1" type="checkbox" name="downloadsEnabled" defaultChecked={project.downloadsEnabled} />
+            <span>{t("allowDownloads")}</span>
+          </label>
+          <label className="block max-w-sm space-y-2 text-sm">
+            <span>{t("expiresOn")}</span>
+            <input className="input-field" type="date" name="expiresOn" defaultValue={expiresOn} />
+          </label>
+          <p className="max-w-2xl text-xs leading-relaxed text-white/55">{t("expiryHelp")}</p>
+          <Button type="submit">{t("saveDeliverySettings")}</Button>
+        </ActionForm>
 
         <div className="ds-card mt-8 p-5 md:p-6">
           <h2 className="font-display text-2xl">{t("upload")}</h2>

@@ -60,6 +60,8 @@ model ClientProfile {
 
 model Project {
   id          String        @id @default(cuid())
+  downloadsEnabled Boolean @default(true)
+  expiresAt DateTime?
   title       String
   description String?
   sessionDate DateTime?

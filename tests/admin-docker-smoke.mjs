@@ -5,6 +5,8 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import sharp from 'sharp';
+import { createRequire } from 'node:module';
+const { encodeReply } = createRequire(import.meta.url)('next/dist/compiled/react-server-dom-webpack/client.node');
 const prisma = new PrismaClient();
 const base = 'http://localhost:3000';
 assert.equal(process.env.ALLOW_LOCAL_SMOKE, '1', 'Explicit local smoke-test opt-in required');
@@ -289,6 +291,53 @@ async function login(email, totp) {
       if(fallback==='favorites') {r=await fetch(base+photoPath+'/favorite',{method:'POST',headers:jsonHeaders});assert.equal((await r.json()).favorite,false);}
     }
     console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
+
+    const settingsPage = `/es/admin/projects/${projectId}`;
+    const settingsHtml = (await page(settingsPage, admin)).html.replaceAll('\\"', '"');
+    const settingsRef = settingsHtml.match(/"id":"gallery-delivery-settings","action":"\$F([a-f\d]+)"/)?.[1];
+    assert(settingsRef, 'Delivery settings are integrated into the existing project panel');
+    const actionId = settingsHtml.match(new RegExp(settingsRef + ':\\{"id":"([a-f0-9]+)"'))?.[1];
+    assert(actionId);
+    const settings = async (cookie, downloads, expiresOn = '') => {
+      const form = new FormData();
+      if (downloads) form.set('downloadsEnabled', 'on');
+      form.set('expiresOn', expiresOn);
+      const response = await fetch(base + settingsPage, {
+        method: 'POST', headers: { cookie, Origin: base, 'Next-Action': actionId },
+        body: await encodeReply(['es', projectId, form]), redirect: 'manual',
+      });
+      await response.text();
+      assert([200, 303].includes(response.status));
+    };
+    await settings(client, false);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, true);
+    await settings(admin, false);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, false);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 403);
+    assert.equal((await page(adminZip, client)).r.status, 403);
+    assert.equal((await page('/api/media/' + photo.storageKey, client)).r.status, 403);
+    assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 200);
+    const reviewGallery = await page(`/es/app/projects/${projectId}`, client);
+    assert.equal(reviewGallery.r.status, 200);
+    assert(!reviewGallery.html.includes('/api/photos/download-zip?'));
+    assert.equal((await page(photoPath + '/download', admin)).r.status, 200);
+    await settings(admin, true, '2000-01-01');
+    assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 403);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 404);
+    assert.equal((await page(adminZip, client)).r.status, 403);
+    assert.equal((await page(`/es/app/projects/${projectId}`, client)).r.status, 307);
+    assert(!(await page('/es/app', client)).html.includes(`/es/app/projects/${projectId}`));
+    for (const operation of ['favorite', 'select', 'comment']) {
+      assert.equal((await fetch(base + photoPath + '/' + operation, {
+        method: 'POST', headers: jsonHeaders, body: JSON.stringify({ body: 'Expired gallery' }),
+      })).status, 403);
+    }
+    assert.equal((await page('/api/media/' + photo.thumbKey, admin)).r.status, 200);
+    await settings(admin, true);
+    assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).expiresAt, null);
+    assert.equal((await page(`/es/app/projects/${projectId}`, client)).r.status, 200);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 200);
+    console.log('PASS integrated delivery settings: admin-only updates, review-only downloads, expiry on every client route, reopening and preserved photographer access');
 
     const restorePath = `/api/photos/${photoId}/restore`;
     const restore = (cookie, origin = base) => fetch(base + restorePath, {

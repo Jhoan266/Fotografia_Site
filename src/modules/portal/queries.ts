@@ -4,7 +4,10 @@ import { requireRole } from "@/lib/session";
 export async function getClientPortal(userId: string) {
   const user = await requireRole("CLIENT");
   if (!user || user.id !== userId) throw new Error("Unauthorized");
-  const where = { client: { userId }, status: "DELIVERED" as const };
+  const where = {
+    client: { userId }, status: "DELIVERED" as const,
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+  };
   const [projects, interactions] = await Promise.all([
     prisma.project.findMany({
       where,

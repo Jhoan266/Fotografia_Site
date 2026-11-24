@@ -18,10 +18,12 @@ export function GalleryClient({
   locale,
   projectId,
   photos: initial,
+  downloadsEnabled = true,
 }: {
   locale: string;
   projectId: string;
   photos: GalleryPhoto[];
+  downloadsEnabled?: boolean;
 }) {
   const t = useTranslations("client");
   const [filter, setFilter] = useState<Filter>("all");
@@ -253,12 +255,12 @@ export function GalleryClient({
             ))}
           </div>
 
-          <a
+          {downloadsEnabled ? <a
             href={`/api/photos/download-zip?projectId=${projectId}`}
             className="btn-ghost !py-2 text-xs"
           >
             {t("downloadSelection")}
-          </a>
+          </a> : <p className="text-sm text-white/65">{t("downloadsDisabled")}</p>}
         </div>
       </div>
 
@@ -409,12 +411,12 @@ export function GalleryClient({
                   </button>
                 </div>
 
-                <a
+                {downloadsEnabled && <a
                   href={`/api/photos/${active.id}/download`}
                   className="btn-ghost mt-2 w-full !py-2"
                 >
                   ↓ {t("downloadOne")}
-                </a>
+                </a>}
 
                 <div className="mt-8">
                   <h3 className="section-label">{t("comments")}</h3>
