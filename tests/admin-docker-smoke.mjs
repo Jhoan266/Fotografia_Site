@@ -245,6 +245,20 @@ async function login(email, totp) {
     console.log('PASS upload, stored thumbnail delivery and photo reorder');
     const photoPath=`/api/photos/${photoId}`;
     const jsonHeaders={cookie:client,Origin:base,'Content-Type':'application/json'};
+    for (const [path, cookie, bytes] of [
+      [photoPath + '/comment', client, 17 * 1024],
+      ['/api/photos/reorder', admin, 161 * 1024],
+      ['/api/editorial/es/hero', admin, 481_000],
+    ]) {
+      const rejected = await fetch(base + path, {
+        method: 'POST', headers: { cookie, Origin: base, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ padding: 'x'.repeat(bytes) }),
+      });
+      assert.equal(rejected.status, 413, 'Oversized authenticated JSON is rejected before parsing');
+    }
+    assert.equal(await prisma.comment.count({ where: { photoId } }), 0);
+    assert.equal(await prisma.editorialModule.count(), 0);
+    console.log('PASS bounded JSON rejects oversized comment, reorder and editorial requests without writes');
     for(const route of ['favorite','select','comment']) {
       const denied=await fetch(base+photoPath+'/'+route,{method:'POST',headers:jsonHeaders,body:JSON.stringify({body:'draft must stay private'})});
       assert.equal(denied.status,403,'Draft projects are not accessible to their client');
