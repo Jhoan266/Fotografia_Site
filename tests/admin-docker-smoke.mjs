@@ -79,7 +79,7 @@ async function login(email, totp) {
   const unconfiguredLogin = await attemptLogin(unconfigured.email,fixtureCode(Math.floor(Date.now()/30_000)));
   assert.notEqual(unconfiguredLogin.status,303);
   assert.equal(unconfiguredLogin.headers.getSetCookie().some(value=>value.startsWith('vs_session=')),false);
-  const code = fixtureCode(Math.floor(Date.now()/30_000)-1);
+  const code = fixtureCode(Math.floor(Date.now()/30_000));
   const admin=await login(adminEmail,code);
   {
    const replay = await attemptLogin(adminEmail,code);
@@ -504,7 +504,7 @@ async function login(email, totp) {
     await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: false } });
   }
 
-  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)));
+  const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)+1));
   assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);
   assert.equal(logoutPage.r.status, 200);
