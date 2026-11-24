@@ -41,19 +41,20 @@ export async function GET(
     include: { project: { include: { client: true } } },
   });
   if (!photo) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const isPreview = key === photo.thumbKey || !photo.thumbKey;
 
   if (
     user.role === "CLIENT" &&
     (photo.project.client.userId !== user.id || !isGalleryAvailable(photo.project) ||
-      (key === photo.storageKey && !photo.project.downloadsEnabled))
+      (!isPreview && key === photo.storageKey && !photo.project.downloadsEnabled))
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   try {
-    if (user.role === "CLIENT" && key !== photo.storageKey && photo.project.watermarkEnabled) {
+    if (user.role === "CLIENT" && isPreview && (photo.project.watermarkEnabled || !photo.thumbKey)) {
       const data = await readProtectedPreview(photo.storageKey, photo.project.watermarkText,
-        previewCode(user.id, photo.projectId), request.nextUrl.searchParams.get("view") === "large", request.signal);
+        previewCode(user.id, photo.projectId), request.nextUrl.searchParams.get("view") === "large", request.signal, photo.project.watermarkEnabled);
       await recordClientDelivery(user.id, photo.projectId, "PREVIEW", photo.filename, photo.id);
       return new NextResponse(new Uint8Array(data), { headers: {
         "Content-Type": "image/webp", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
@@ -64,7 +65,7 @@ export async function GET(
       ? await readDeliveryPhoto(key, request.signal)
       : null;
     const data = delivered?.data ?? await readStoredFile(key);
-    if (user.role === "CLIENT") await recordClientDelivery(user.id, photo.projectId, key === photo.storageKey ? "DOWNLOAD" : "PREVIEW", photo.filename, photo.id);
+    if (user.role === "CLIENT") await recordClientDelivery(user.id, photo.projectId, isPreview ? "PREVIEW" : "DOWNLOAD", photo.filename, photo.id);
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": delivered ? `image/${delivered.format}` : contentTypeFor(key),

@@ -447,6 +447,14 @@ async function login(email, totp) {
     assert.deepEqual(unmarked, adminPreview, 'Only the admin can explicitly disable preview watermarking');
     await settings(admin, false);
     console.log('PASS automatic protected previews, tamper resistance, admin opt-out, client review codes and grouped delivery logs');
+    const legacyPhoto = await prisma.photo.findUniqueOrThrow({ where: { id: upload.ids[1] } });
+    await prisma.photo.update({ where: { id: legacyPhoto.id }, data: { thumbKey: null } });
+    try {
+      const legacyPreview = await page('/api/media/' + legacyPhoto.storageKey, client);
+      assert.equal(legacyPreview.r.status, 200);
+      assert.equal(legacyPreview.r.headers.get('content-type'), 'image/webp');
+      assert.equal((await page(`/api/photos/${legacyPhoto.id}/download`, client)).r.status, 403);
+    } finally { await prisma.photo.update({ where: { id: legacyPhoto.id }, data: { thumbKey: legacyPhoto.thumbKey } }); }
     assert.equal((await page(photoPath + '/download', client)).r.status, 403);
     assert.equal((await page(adminZip, client)).r.status, 403);
     assert.equal((await page('/api/media/' + photo.storageKey, client)).r.status, 403);

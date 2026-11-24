@@ -10,10 +10,15 @@ export const LARGE_PREVIEW_EDGE = 2560;
 const FONT = path.join(process.cwd(), "public/fonts/NotoSans.ttf");
 const escapeMarkup = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
-export async function renderProtectedPreview(input: Buffer, text: string, code: string, large = false) {
+export async function renderProtectedPreview(input: Buffer, text: string, code: string, large = false, watermark = true) {
   const base = await sharp(input, { failOn: "error", limitInputPixels: 64_000_000 })
     .rotate().resize({ width: large ? LARGE_PREVIEW_EDGE : PREVIEW_EDGE, height: large ? LARGE_PREVIEW_EDGE : PREVIEW_EDGE,
       fit: "inside", withoutEnlargement: true }).png().timeout({ seconds: 20 }).toBuffer({ resolveWithObject: true });
+  if (!watermark) {
+    const data = await sharp(base.data).webp({ lossless: true }).timeout({ seconds: 20 }).toBuffer();
+    if (data.length > MAX_UPLOAD_FILE_BYTES) throw new Error("Preview exceeds delivery limit");
+    return data;
+  }
   const label = `${escapeMarkup(text.normalize("NFKC").replace(/[\u0000-\u001f]/g, " ").slice(0, 60))}\nCLIENTE ${escapeMarkup(code)}`;
   const glyphs = await sharp({ text: { text: `<span foreground="#ffffff">${label}</span>`, font: "Noto Sans 22", fontfile: FONT, rgba: true, width: 380, align: "centre" } })
     .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -60,8 +65,8 @@ const cache = new Map<string, { data: Buffer; expires: number }>();
 let cacheBytes = 0;
 const pending = new Map<string, Promise<Buffer>>();
 
-export async function readProtectedPreview(key: string, text: string, code: string, large: boolean, signal: AbortSignal) {
-  const cacheKey = createHash("sha256").update(JSON.stringify([key, text, code, large])).digest("hex");
+export async function readProtectedPreview(key: string, text: string, code: string, large: boolean, signal: AbortSignal, watermark = true) {
+  const cacheKey = createHash("sha256").update(JSON.stringify([key, text, code, large, watermark])).digest("hex");
   const hit = cache.get(cacheKey);
   if (hit && hit.expires > Date.now()) { cache.delete(cacheKey); cache.set(cacheKey, hit); return hit.data; }
   const existing = pending.get(cacheKey);
@@ -79,7 +84,7 @@ export async function readProtectedPreview(key: string, text: string, code: stri
       const chunks: Buffer[] = []; let bytes = 0;
       try { for await (const chunk of stream) { deadline.throwIfAborted(); bytes += chunk.length; if (bytes > MAX_UPLOAD_FILE_BYTES) throw new Error("Preview source too large"); chunks.push(chunk); } }
       finally { stream.destroy(); }
-      const data = await renderProtectedPreview(Buffer.concat(chunks), text, code, large);
+      const data = await renderProtectedPreview(Buffer.concat(chunks), text, code, large, watermark);
       deadline.throwIfAborted();
       const old = cache.get(cacheKey); if (old) { cacheBytes -= old.data.length; cache.delete(cacheKey); }
       while (cache.size && (cacheBytes + data.length > 48 * 1024 * 1024 || cache.size >= 64)) {
