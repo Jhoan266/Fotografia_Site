@@ -4,6 +4,7 @@ import { readStoredFile } from "@/lib/storage";
 import { contentDispositionAttachment } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
 import { canDownloadGallery } from "@/modules/projects/delivery-policy";
+import { recordClientDelivery } from "@/modules/photos/delivery-log";
 
 import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 
@@ -30,6 +31,7 @@ export async function GET(
   try {
     const delivered = user.role === "CLIENT" ? await readDeliveryPhoto(photo.storageKey, request.signal) : null;
     const data = delivered?.data ?? await readStoredFile(photo.storageKey);
+    if (user.role === "CLIENT") await recordClientDelivery(user.id, photo.projectId, "DOWNLOAD", photo.filename, photo.id);
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": delivered ? `image/${delivered.format}` : "application/octet-stream",

@@ -33,6 +33,7 @@ export default async function ProjectGalleryPage({
     albumId: photo.albumId,
     filename: photo.filename,
     thumbUrl: `/api/media/${photo.thumbKey || photo.storageKey}`,
+    previewUrl: `/api/media/${photo.thumbKey || photo.storageKey}?view=large`,
     favorite: photo.favorites.length > 0,
     selected: photo.selections.some((s) => s.status === "SELECTED"),
     comments: photo.comments.map((c) => ({

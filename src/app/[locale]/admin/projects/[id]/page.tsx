@@ -7,6 +7,7 @@ import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
 import { GalleryOrganization } from "@/components/admin/GalleryOrganization";
 import { SelectionReview } from "@/components/admin/SelectionReview";
 import { readSubmittedPhotos } from "@/modules/projects/selection-export";
+import { previewCode } from "@/modules/photos/preview-identity";
 import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { publishProject, updateDeliverySettings } from "@/modules/projects/actions";
 import { getProjectForAdmin } from "@/modules/projects/queries";
@@ -21,6 +22,7 @@ export default async function AdminProjectDetailPage({
   const session = await getAuthenticatedSession();
   if (session?.user.role !== "ADMIN") redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
+  const protection = await getTranslations("previewProtection");
   const project = await getProjectForAdmin(id);
   if (!project) notFound();
   const format = await getFormatter();
@@ -58,12 +60,36 @@ export default async function AdminProjectDetailPage({
             <span>{t("allowDownloads")}</span>
           </label>
           <label className="block max-w-sm space-y-2 text-sm">
+            <span className="flex items-start gap-3">
+              <input className="mt-1" type="checkbox" name="watermarkEnabled" defaultChecked={project.watermarkEnabled} />
+              <span>{protection("enable")}</span>
+            </span>
+          </label>
+          <label className="block max-w-xl space-y-2 text-sm">
+            <span>{protection("text")}</span>
+            <input className="input-field" name="watermarkText" maxLength={60} required defaultValue={project.watermarkText} />
+          </label>
+          <p className="max-w-2xl text-xs leading-relaxed text-white/60">{protection("help")}</p>
+          <p className="text-sm text-sand">{protection("code", { code: previewCode(project.client.user.id, id) })}</p>
+          <label className="block max-w-sm space-y-2 text-sm">
             <span>{t("expiresOn")}</span>
             <input className="input-field" type="date" name="expiresOn" defaultValue={expiresOn} />
           </label>
           <p className="max-w-2xl text-xs leading-relaxed text-white/55">{t("expiryHelp")}</p>
           <Button type="submit">{t("saveDeliverySettings")}</Button>
         </ActionForm>
+
+        <details className="ds-card mt-8 space-y-4 p-5 md:p-6">
+          <summary className="cursor-pointer font-display text-xl">{protection("activity")}</summary>
+          <p className="text-xs leading-relaxed text-white/60">{protection("activityHelp")}</p>
+          <ul className="space-y-3">
+            {project.deliveryLogs.map(log => <li key={log.id} className="rounded border border-white/10 p-3 text-sm">
+              <p className="break-words">{log.filename} · {protection(log.kind === "PREVIEW" ? "preview" : log.kind === "ZIP" ? "zip" : "download")}</p>
+              <p className="mt-1 text-xs text-white/55">{log.clientCode} · {format.dateTime(log.lastAt, { dateStyle: "short", timeStyle: "short" })} · {protection("requests", { count: log.requests })}</p>
+            </li>)}
+            {!project.deliveryLogs.length && <li className="text-sm text-white/55">{protection("empty")}</li>}
+          </ul>
+        </details>
 
         <SelectionReview projectId={id} confirmed={Boolean(project.selectionConfirmedAt)}
           version={project.selectionVersion}

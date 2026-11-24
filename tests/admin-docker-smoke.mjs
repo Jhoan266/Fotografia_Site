@@ -119,9 +119,13 @@ async function login(email, totp) {
   const projects=[];
   for(let i=0;i<7;i++) projects.push(await prisma.project.create({data:{
     clientId:profile.id,title:`${tag}-project-${i}`,
-    status:["DRAFT","DELIVERED","ARCHIVED"][i%3],
+    status:["DRAFT","DELIVERED","ARCHIVED"][i%3], downloadsEnabled: true,
     updatedAt:new Date(Date.now()+i*1000),sessionDate:new Date("2026-11-08T12:00:00Z"),
   }}));
+  const defaults = await prisma.project.create({ data: { clientId: profile.id, title: 'Protected defaults' } });
+  assert.equal(defaults.downloadsEnabled, false);
+  assert.equal(defaults.watermarkEnabled, true);
+  await prisma.project.delete({ where: { id: defaults.id } });
   for(const locale of ['es','en','fr']) {
     const {html,r}=await page(`/${locale}/admin`,admin);assert.equal(r.status,200);
     for(let i=1;i<7;i++) assert(html.includes(`${tag}-project-${i}`),'Six newest projects render');
@@ -404,10 +408,12 @@ async function login(email, totp) {
     const manifest = JSON.parse(await readFile('.next/server/server-reference-manifest.json', 'utf8'));
     const actionId = Object.entries(manifest.node).find(([, entry]) => entry.exportedName === 'updateDeliverySettings')?.[0];
     assert(actionId);
-    const settings = async (cookie, downloads, expiresOn = '') => {
+    const settings = async (cookie, downloads, expiresOn = '', watermark = true) => {
       const form = new FormData();
       if (downloads) form.set('downloadsEnabled', 'on');
       form.set('expiresOn', expiresOn);
+      form.set('watermarkText', 'QA Protected');
+      if (watermark) form.set('watermarkEnabled', 'on');
       const response = await fetch(base + settingsPage, {
         method: 'POST', headers: { cookie, Origin: base, 'Next-Action': actionId },
         body: await encodeReply(['es', projectId, form]), redirect: 'manual',
@@ -419,6 +425,28 @@ async function login(email, totp) {
     assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, true);
     await settings(admin, false);
     assert.equal((await prisma.project.findUnique({ where: { id: projectId } })).downloadsEnabled, false);
+    const protectedUrl = '/api/media/' + photo.thumbKey;
+    const marked = await page(protectedUrl, client);
+    assert.equal(marked.r.status, 200);
+    assert.equal(marked.r.headers.get('content-type'), 'image/webp');
+    assert(marked.r.headers.get('cache-control').includes('no-store'));
+    const markedBytes = Buffer.from(await (await fetch(base + protectedUrl, { headers: { cookie: client } })).arrayBuffer());
+    const bypass = await fetch(base + protectedUrl + '?watermark=false&original=true', { headers: { cookie: client } });
+    assert.equal(bypass.status, 200);
+    assert.deepEqual(Buffer.from(await bypass.arrayBuffer()), markedBytes, 'Query parameters cannot remove the watermark');
+    const adminPreview = Buffer.from(await (await fetch(base + protectedUrl, { headers: { cookie: admin } })).arrayBuffer());
+    assert(!markedBytes.equals(adminPreview), 'Only client previews carry the personalized mark');
+    const reviewLogs = await prisma.photoDeliveryLog.findMany({ where: { projectId, actorId: ids[1], kind: 'PREVIEW' } });
+    assert(reviewLogs.length > 0);
+    assert(reviewLogs.some(log => log.requests > 1));
+    assert(reviewLogs.every(log => /^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/.test(log.clientCode)));
+    const activityPage = await page(`/es/admin/projects/${projectId}`, admin);
+    assert(activityPage.html.includes(reviewLogs[0].clientCode));
+    await settings(admin, false, '', false);
+    const unmarked = Buffer.from(await (await fetch(base + protectedUrl, { headers: { cookie: client } })).arrayBuffer());
+    assert.deepEqual(unmarked, adminPreview, 'Only the admin can explicitly disable preview watermarking');
+    await settings(admin, false);
+    console.log('PASS automatic protected previews, tamper resistance, admin opt-out, client review codes and grouped delivery logs');
     assert.equal((await page(photoPath + '/download', client)).r.status, 403);
     assert.equal((await page(adminZip, client)).r.status, 403);
     assert.equal((await page('/api/media/' + photo.storageKey, client)).r.status, 403);

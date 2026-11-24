@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import path from "path";
 import { isGalleryAvailable } from "@/modules/projects/delivery-policy";
 import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
+import { readProtectedPreview } from "@/modules/photos/protected-preview";
+import { previewCode } from "@/modules/photos/preview-identity";
+import { recordClientDelivery } from "@/modules/photos/delivery-log";
 
 export const runtime = "nodejs";
 
@@ -48,10 +51,20 @@ export async function GET(
   }
 
   try {
+    if (user.role === "CLIENT" && key !== photo.storageKey && photo.project.watermarkEnabled) {
+      const data = await readProtectedPreview(photo.storageKey, photo.project.watermarkText,
+        previewCode(user.id, photo.projectId), request.nextUrl.searchParams.get("view") === "large", request.signal);
+      await recordClientDelivery(user.id, photo.projectId, "PREVIEW", photo.filename, photo.id);
+      return new NextResponse(new Uint8Array(data), { headers: {
+        "Content-Type": "image/webp", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+      } });
+    }
     const delivered = user.role === "CLIENT" && key === photo.storageKey
       ? await readDeliveryPhoto(key, request.signal)
       : null;
     const data = delivered?.data ?? await readStoredFile(key);
+    if (user.role === "CLIENT") await recordClientDelivery(user.id, photo.projectId, key === photo.storageKey ? "DOWNLOAD" : "PREVIEW", photo.filename, photo.id);
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": delivered ? `image/${delivered.format}` : contentTypeFor(key),

@@ -8,6 +8,7 @@ export type GalleryPhoto = {
   albumId?: string | null;
   filename: string;
   thumbUrl: string;
+  previewUrl?: string;
   favorite: boolean;
   selected: boolean;
   comments: { id: string; body: string; author: string; createdAt: string }[];
@@ -394,7 +395,7 @@ export function GalleryClient({
             <div className="relative flex min-h-0 items-center justify-center bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={active.thumbUrl}
+                src={active.previewUrl ?? active.thumbUrl}
                 alt={active.filename}
                 className="max-h-full max-w-full object-contain"
               />
