@@ -323,7 +323,9 @@ async function login(email, totp) {
     assert.equal((await page(photoPath + '/download', admin)).r.status, 200);
     await settings(admin, true, '2000-01-01');
     assert.equal((await page('/api/media/' + photo.thumbKey, client)).r.status, 403);
-    assert.equal((await page(photoPath + '/download', client)).r.status, 404);
+    const expiredDownload = (await page(photoPath + '/download', client)).r;
+    assert.equal(expiredDownload.status, 404);
+    assert(expiredDownload.headers.get('cache-control')?.includes('no-store'), 'Denied files must not be cached across gallery reopening');
     assert.equal((await page(adminZip, client)).r.status, 403);
     assert.equal((await page(`/es/app/projects/${projectId}`, client)).r.status, 307);
     assert(!(await page('/es/app', client)).html.includes(`/es/app/projects/${projectId}`));

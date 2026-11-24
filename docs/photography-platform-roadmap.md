@@ -37,6 +37,8 @@ validar individualmente todos los módulos acordados.
 - La caducidad bloquea portal, galería, archivos, comentarios, selección y pedidos
   del cliente. El fotógrafo conserva acceso y puede reabrir la sesión.
 - La fecha incluye todo el día en UTC; la interfaz lo indica expresamente.
+- Las respuestas API, incluidos errores, llevan private/no-store para que una
+  denegación anterior no quede en la caché de Hostinger al reabrir la sesión.
 - No se borran fotos. No pueden revocarse archivos ya descargados, capturas de
   pantalla ni una transferencia que ya haya sido autorizada e iniciada.
 
