@@ -5,6 +5,8 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
 import { GalleryOrganization } from "@/components/admin/GalleryOrganization";
+import { SelectionReview } from "@/components/admin/SelectionReview";
+import { readSubmittedPhotos } from "@/modules/projects/selection-export";
 import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { publishProject, updateDeliverySettings } from "@/modules/projects/actions";
 import { getProjectForAdmin } from "@/modules/projects/queries";
@@ -62,6 +64,10 @@ export default async function AdminProjectDetailPage({
           <p className="max-w-2xl text-xs leading-relaxed text-white/55">{t("expiryHelp")}</p>
           <Button type="submit">{t("saveDeliverySettings")}</Button>
         </ActionForm>
+
+        <SelectionReview projectId={id} confirmed={Boolean(project.selectionConfirmedAt)}
+          version={project.selectionVersion}
+          items={project.selectionConfirmedAt ? readSubmittedPhotos(project.selectionSubmissions[0]?.items) : []} />
 
         <GalleryOrganization projectId={id} albums={project.albums}
           key={JSON.stringify([project.albums, project.coverPhotoId, activePhotos.map(p => [p.id, p.albumId])])}

@@ -120,6 +120,16 @@
     "errorMissing": "Enter email and password.",
     "errorRate": "Too many attempts. Wait a minute."
   },
+  "proofing": {
+    "title": "Final selection", "help": "Select your album photos and confirm when ready (up to 500). Confirmation includes the whole session, not just the visible album or filter.",
+    "confirm": "Confirm selection ({count})", "confirmPrompt": "Submit this selection as final? You will need the photographer to reopen it before changing selected photos.",
+    "confirmed": "Your selection is confirmed. You can still view photos, comment and mark favorites. Ask the photographer to reopen it if you need to change it.", "saving": "Confirming…",
+    "error": "Could not complete the action. Another tab may have changed the selection: reload to review the current state before trying again.",
+    "received": "Confirmed selection received: {count} photos.", "waiting": "The client has not confirmed their final selection yet.",
+    "csv": "Export CSV", "txt": "Export filenames TXT", "viewList": "View confirmed list", "reopen": "Reopen selection",
+    "reopenPrompt": "Allow the client to change their selection? The previous submission will be retained; the client must confirm again.",
+    "exportHelp": "Exports contain confirmed original filenames and identifiers, without storage links. If filenames repeat, use the CSV identifiers to distinguish photos."
+  },
   "collections": {
     "title": "Albums and cover", "help": "Organize this session without duplicating files. Photos keep their favorites and comments. Access and expiry apply to the whole session.",
     "newAlbum": "New album", "create": "Create album", "albumName": "Album name", "photos": "photos", "rename": "Save name",

@@ -21,15 +21,28 @@ export function GalleryClient({
   photos: initial,
   downloadsEnabled = true,
   albums = [],
+  selectionVersion: initialVersion = 0,
+  selectionConfirmedAt: initialConfirmation = null,
+  canConfirm = false,
 }: {
   locale: string;
   projectId: string;
   photos: GalleryPhoto[];
   downloadsEnabled?: boolean;
   albums?: { id: string; name: string }[];
+  selectionVersion?: number;
+  selectionConfirmedAt?: string | null;
+  canConfirm?: boolean;
 }) {
   const t = useTranslations("client");
   const c = useTranslations("collections");
+  const proofing = useTranslations("proofing");
+  const [selectionVersion, setSelectionVersion] = useState(initialVersion);
+  const [confirmedAt, setConfirmedAt] = useState(initialConfirmation);
+  const [confirming, setConfirming] = useState(false);
+  const [savingSelection, setSavingSelection] = useState(0);
+  const confirmationLock = useRef(false);
+  const [confirmationError, setConfirmationError] = useState(false);
   const [albumId, setAlbumId] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [photos, setPhotos] = useState(initial);
@@ -151,11 +164,13 @@ export function GalleryClient({
   }, [viewerOpen, closeViewer, navigateViewer]);
 
   async function togglePhoto(photoId: string, field: "favorite" | "selected") {
+    if (field === "selected" && (confirmedAt || confirmationLock.current)) return;
     const key = `${photoId}:${field}`;
     if (mutationLocks.current.has(key)) return;
     const previous = photos.find((photo) => photo.id === photoId)?.[field];
     if (previous === undefined) return;
     mutationLocks.current.add(key);
+    if (field === "selected") setSavingSelection(n => n + 1);
     setError(null);
     setPhotos((current) =>
       current.map((photo) =>
@@ -169,6 +184,7 @@ export function GalleryClient({
       );
       if (!response.ok) throw new Error("Photo update failed");
       const data = await response.json();
+      if (field === "selected" && Number.isSafeInteger(data.version)) setSelectionVersion(current => Math.max(current, data.version));
       if (typeof data[field] !== "boolean")
         throw new Error("Invalid photo response");
       setPhotos((current) =>
@@ -185,7 +201,22 @@ export function GalleryClient({
       setError(t("saveError"));
     } finally {
       mutationLocks.current.delete(key);
+      if (field === "selected") setSavingSelection(n => n - 1);
     }
+  }
+
+  async function confirmSelection() {
+    if (confirmationLock.current || savingSelection || mutationLocks.current.size || confirmedAt || !window.confirm(proofing("confirmPrompt"))) return;
+    confirmationLock.current = true; setConfirming(true); setConfirmationError(false);
+    try {
+      const r = await fetch(`/api/projects/${projectId}/selection`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "confirm", version: selectionVersion, photoIds: photos.filter(p => p.selected).map(p => p.id) }) });
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      if (typeof data.confirmedAt !== "string") throw new Error();
+      setConfirmedAt(data.confirmedAt);
+    } catch { setConfirmationError(true); }
+    finally { confirmationLock.current = false; setConfirming(false); }
   }
 
   async function sendComment(photoId: string) {
@@ -221,6 +252,12 @@ export function GalleryClient({
 
   return (
     <div className="portal-photo-experience">
+      {canConfirm && <section className="ds-card mb-6 space-y-3 p-5" aria-label={proofing("title")}>
+        <h2 className="font-display text-xl">{proofing("title")}</h2>
+        <p className="text-sm leading-relaxed text-white/65">{confirmedAt ? proofing("confirmed") : proofing("help")}</p>
+        {!confirmedAt && <button type="button" className="btn-ghost" disabled={confirming || savingSelection > 0 || !selectedCount || selectedCount > 500} onClick={() => void confirmSelection()}>{confirming ? proofing("saving") : proofing("confirm", { count: selectedCount })}</button>}
+        {confirmationError && <p role="alert" className="text-sm text-red-300">{proofing("error")}</p>}
+      </section>}
       {error && !active && (
         <p role="alert" className="mt-4 text-sm text-red-300">
           {error}
@@ -424,6 +461,7 @@ export function GalleryClient({
                     }
                     aria-pressed={active.selected}
                     onClick={() => void togglePhoto(active.id, "selected")}
+                    disabled={Boolean(confirmedAt) || confirming}
                   >
                     {active.selected ? "✓" : "+"} {t("selectAlbum")}
                   </button>

@@ -120,6 +120,16 @@
     "errorMissing": "Entrez email et mot de passe.",
     "errorRate": "Trop de tentatives. Attendez une minute."
   },
+  "proofing": {
+    "title": "Sélection finale", "help": "Sélectionnez les photos de votre album puis confirmez (500 maximum). La confirmation comprend toute la séance, pas seulement l’album ou le filtre affiché.",
+    "confirm": "Confirmer la sélection ({count})", "confirmPrompt": "Envoyer cette sélection définitive ? Le photographe devra la rouvrir pour modifier les photos sélectionnées.",
+    "confirmed": "Votre sélection est confirmée. Vous pouvez consulter les photos, commenter et ajouter des favoris. Demandez au photographe de la rouvrir pour la modifier.", "saving": "Confirmation…",
+    "error": "Action impossible. Un autre onglet a peut-être modifié la sélection : rechargez pour vérifier son état avant de réessayer.",
+    "received": "Sélection confirmée reçue : {count} photos.", "waiting": "Le client n’a pas encore confirmé sa sélection finale.",
+    "csv": "Exporter CSV", "txt": "Exporter les noms TXT", "viewList": "Voir la liste confirmée", "reopen": "Rouvrir la sélection",
+    "reopenPrompt": "Permettre au client de modifier sa sélection ? La confirmation précédente sera conservée ; le client devra confirmer à nouveau.",
+    "exportHelp": "Les exports contiennent les noms originaux et identifiants confirmés, sans liens de stockage. En cas de noms identiques, utilisez les identifiants CSV."
+  },
   "collections": {
     "title": "Albums et couverture", "help": "Organisez cette séance sans dupliquer les fichiers. Les favoris et commentaires sont conservés. Les accès et l’expiration s’appliquent à toute la séance.",
     "newAlbum": "Nouvel album", "create": "Créer un album", "albumName": "Nom de l’album", "photos": "photos", "rename": "Enregistrer le nom",

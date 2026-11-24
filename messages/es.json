@@ -120,6 +120,16 @@
     "errorMissing": "Introduce email y contraseña.",
     "errorRate": "Demasiados intentos. Espera un minuto."
   },
+  "proofing": {
+    "title": "Selección final", "help": "Selecciona las fotos para el álbum y confirma cuando termines (hasta 500). La confirmación incluye toda la sesión, no solo el subálbum o filtro visible.",
+    "confirm": "Confirmar selección ({count})", "confirmPrompt": "¿Enviar esta selección como definitiva? Después necesitarás que el fotógrafo la reabra para cambiar las fotos seleccionadas.",
+    "confirmed": "Tu selección está confirmada. Puedes seguir viendo las fotos, comentando y marcando favoritos. Pide al fotógrafo que la reabra si necesitas modificarla.", "saving": "Confirmando…",
+    "error": "No se pudo completar la acción. Puede haber cambios en otra pestaña: recarga la galería para revisar el estado actual antes de reintentar.",
+    "received": "Selección confirmada recibida: {count} fotos.", "waiting": "El cliente todavía no ha confirmado su selección final.",
+    "csv": "Exportar CSV", "txt": "Exportar nombres TXT", "viewList": "Ver lista confirmada", "reopen": "Reabrir selección",
+    "reopenPrompt": "¿Permitir que el cliente cambie su selección? La confirmación anterior quedará conservada; el cliente tendrá que confirmar de nuevo.",
+    "exportHelp": "La exportación contiene los nombres originales e identificadores confirmados, sin enlaces al almacenamiento. Si hay nombres repetidos, usa los identificadores del CSV para distinguir las fotos."
+  },
   "collections": {
     "title": "Subálbumes y portada", "help": "Organiza esta sesión sin duplicar archivos. Las fotos conservan sus favoritos y comentarios. Los permisos y la caducidad se aplican a toda la sesión.",
     "newAlbum": "Nuevo subálbum", "create": "Crear subálbum", "albumName": "Nombre del subálbum", "photos": "fotos", "rename": "Guardar nombre",
