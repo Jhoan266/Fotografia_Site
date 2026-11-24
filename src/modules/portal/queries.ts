@@ -21,6 +21,7 @@ export async function getClientPortal(userId: string) {
         title: true,
         description: true,
         sessionDate: true,
+        coverPhoto: { select: { id: true, projectId: true, trashedAt: true, thumbKey: true, storageKey: true } },
         _count: { select: { photos: { where: { trashedAt: null } } } },
         photos: {
           where: { trashedAt: null },
@@ -58,6 +59,10 @@ export async function getClientPortal(userId: string) {
   }
   return projects.map((project) => ({
     ...project,
+    photos: project.coverPhoto && project.coverPhoto.projectId === project.id && !project.coverPhoto.trashedAt
+      ? [project.coverPhoto, ...project.photos.filter(p => p.storageKey !== project.coverPhoto!.storageKey)].slice(0, 3)
+      : project.photos,
+    coverPhoto: undefined,
     favorites: counts.get(project.id)?.favorites ?? 0,
     selected: counts.get(project.id)?.selected ?? 0,
   }));

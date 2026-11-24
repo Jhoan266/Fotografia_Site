@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
   },
   experimental: {
+    // Keep builds within the resource limits of managed hosting.
+    cpus: 2,
     serverActions: {
       bodySizeLimit: "20mb",
     },

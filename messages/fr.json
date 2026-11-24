@@ -120,6 +120,13 @@
     "errorMissing": "Entrez email et mot de passe.",
     "errorRate": "Trop de tentatives. Attendez une minute."
   },
+  "collections": {
+    "title": "Albums et couverture", "help": "Organisez cette séance sans dupliquer les fichiers. Les favoris et commentaires sont conservés. Les accès et l’expiration s’appliquent à toute la séance.",
+    "newAlbum": "Nouvel album", "create": "Créer un album", "albumName": "Nom de l’album", "photos": "photos", "rename": "Enregistrer le nom",
+    "moveUp": "Monter {name}", "moveDown": "Descendre {name}", "delete": "Supprimer l’album", "deleteHelp": "Supprimer cet album ? Les photos seront non classées. Les fichiers, favoris et commentaires ne seront pas supprimés.",
+    "empty": "Aucun album pour le moment.", "cover": "Photo de couverture", "automaticCover": "Automatique : première photo disponible", "organize": "Déplacer les photos entre albums (500 à la fois maximum)",
+    "unassigned": "Non classées", "destination": "Album de destination", "moveSelected": "Déplacer la sélection ({count})", "saving": "Enregistrement…", "error": "Échec de l’enregistrement. Rechargez pour afficher les paramètres actuels et réessayez.", "saved": "Modifications enregistrées.", "browse": "Parcourir l’album", "all": "Toutes les photos"
+  },
   "client": {
     "label": "Vos séances",
     "hello": "Bonjour, {name}",

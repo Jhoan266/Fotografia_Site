@@ -62,13 +62,16 @@ model Project {
   id          String        @id @default(cuid())
   downloadsEnabled Boolean @default(true)
   expiresAt DateTime?
+  coverPhotoId String?
+  coverPhoto Photo? @relation("GalleryCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  albums GalleryAlbum[]
   title       String
   description String?
   sessionDate DateTime?
   status      ProjectStatus @default(DRAFT)
   clientId    String
   client      ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  photos      Photo[]
+  photos      Photo[] @relation("ProjectPhotos")
   packs       ProjectPack[]
   orders      Order[]
   createdAt   DateTime      @default(now())
@@ -79,7 +82,10 @@ model Photo {
   trashedAt  DateTime?
   id         String      @id @default(cuid())
   projectId  String
-  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project    Project     @relation("ProjectPhotos", fields: [projectId], references: [id], onDelete: Cascade)
+  albumId String?
+  album GalleryAlbum? @relation(fields: [albumId, projectId], references: [id, projectId], onDelete: NoAction, onUpdate: NoAction)
+  coverFor Project[] @relation("GalleryCover")
   storageKey String
   thumbKey   String?
   filename   String
@@ -92,6 +98,18 @@ model Photo {
   createdAt  DateTime    @default(now())
 
   @@index([projectId, trashedAt])
+  @@index([albumId, projectId])
+}
+
+model GalleryAlbum {
+  id String @id @default(cuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name String
+  sortOrder Int @default(0)
+  photos Photo[]
+  @@unique([id, projectId])
+  @@index([projectId, sortOrder])
 }
 
 model Favorite {
