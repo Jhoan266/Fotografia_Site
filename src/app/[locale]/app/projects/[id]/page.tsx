@@ -30,6 +30,7 @@ export default async function ProjectGalleryPage({
     redirect(`/${locale}/app`);
   const photos = project.photos.map((photo) => ({
     id: photo.id,
+    albumId: photo.albumId,
     filename: photo.filename,
     thumbUrl: `/api/media/${photo.thumbKey || photo.storageKey}`,
     favorite: photo.favorites.length > 0,
@@ -41,12 +42,13 @@ export default async function ProjectGalleryPage({
       createdAt: c.createdAt.toISOString(),
     })),
   }));
+  const cover = photos.find(photo => photo.id === project.coverPhotoId) ?? photos[0];
   return (
     <div className="portal-gallery-page">
       <section className="portal-gallery-cover">
-        {photos[0] && (
+        {cover && (
           <Image
-            src={photos[0].thumbUrl}
+            src={cover.thumbUrl}
             alt=""
             fill
             sizes="100vw"
@@ -95,6 +97,7 @@ export default async function ProjectGalleryPage({
           <p>{p("galleryInstructions")}</p>
         </div>
         <GalleryClient locale={locale} projectId={project.id} photos={photos}
+          albums={project.albums.map(a => ({ id: a.id, name: a.name }))}
           downloadsEnabled={user.role === "ADMIN" || project.downloadsEnabled} />
       </section>
       {project.packs.length > 0 && (

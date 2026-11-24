@@ -120,6 +120,13 @@
     "errorMissing": "Introduce email y contraseña.",
     "errorRate": "Demasiados intentos. Espera un minuto."
   },
+  "collections": {
+    "title": "Subálbumes y portada", "help": "Organiza esta sesión sin duplicar archivos. Las fotos conservan sus favoritos y comentarios. Los permisos y la caducidad se aplican a toda la sesión.",
+    "newAlbum": "Nuevo subálbum", "create": "Crear subálbum", "albumName": "Nombre del subálbum", "photos": "fotos", "rename": "Guardar nombre",
+    "moveUp": "Subir {name}", "moveDown": "Bajar {name}", "delete": "Eliminar subálbum", "deleteHelp": "¿Eliminar este subálbum? Las fotografías pasarán a Sin subálbum. No se borrarán archivos, favoritos ni comentarios.",
+    "empty": "Todavía no hay subálbumes.", "cover": "Fotografía de portada", "automaticCover": "Automática: primera foto disponible", "organize": "Mover fotografías entre subálbumes (hasta 500 a la vez)",
+    "unassigned": "Sin subálbum", "destination": "Subálbum de destino", "moveSelected": "Mover selección ({count})", "saving": "Guardando…", "error": "No se pudo guardar. Recarga para ver los ajustes actuales y vuelve a intentarlo.", "saved": "Cambios guardados.", "browse": "Explorar subálbum", "all": "Todas las fotos"
+  },
   "client": {
     "label": "Tus sesiones",
     "hello": "Hola, {name}",

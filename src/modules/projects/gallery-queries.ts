@@ -4,6 +4,7 @@ export function getClientProjectGallery(projectId: string, userId: string) {
   return prisma.project.findUnique({
     where: { id: projectId },
     include: {
+      albums: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
       client: true,
       photos: {
         where: { trashedAt: null },

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 export type GalleryPhoto = {
   id: string;
+  albumId?: string | null;
   filename: string;
   thumbUrl: string;
   favorite: boolean;
@@ -19,13 +20,17 @@ export function GalleryClient({
   projectId,
   photos: initial,
   downloadsEnabled = true,
+  albums = [],
 }: {
   locale: string;
   projectId: string;
   photos: GalleryPhoto[];
   downloadsEnabled?: boolean;
+  albums?: { id: string; name: string }[];
 }) {
   const t = useTranslations("client");
+  const c = useTranslations("collections");
+  const [albumId, setAlbumId] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [photos, setPhotos] = useState(initial);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -42,17 +47,18 @@ export function GalleryClient({
   const triggerRefs = useRef(new Map<string, HTMLButtonElement>());
 
   const visible = useMemo(() => {
-    if (filter === "favorites") return photos.filter((photo) => photo.favorite);
-    if (filter === "album") return photos.filter((photo) => photo.selected);
-    return photos;
-  }, [filter, photos]);
+    const group = photos.filter(photo => !albumId || (albumId === "unassigned" ? !photo.albumId : photo.albumId === albumId));
+    if (filter === "favorites") return group.filter((photo) => photo.favorite);
+    if (filter === "album") return group.filter((photo) => photo.selected);
+    return group;
+  }, [filter, photos, albumId]);
 
   const favoritesCount = photos.filter((photo) => photo.favorite).length;
   const selectedCount = photos.filter((photo) => photo.selected).length;
   const activeIndex = activeId
-    ? photos.findIndex((photo) => photo.id === activeId)
+    ? visible.findIndex((photo) => photo.id === activeId)
     : -1;
-  const active = activeIndex >= 0 ? photos[activeIndex] : null;
+  const active = activeIndex >= 0 ? visible[activeIndex] : null;
 
   const closeViewer = useCallback(() => {
     draftVersion.current++;
@@ -67,14 +73,18 @@ export function GalleryClient({
   const navigateViewer = useCallback(
     (direction: -1 | 1) => {
       draftVersion.current++;
-      if (activeIndex < 0 || photos.length < 2) return;
+      if (activeIndex < 0 || visible.length < 2) return;
       const nextIndex =
-        (activeIndex + direction + photos.length) % photos.length;
-      setActiveId(photos[nextIndex].id);
+        (activeIndex + direction + visible.length) % visible.length;
+      setActiveId(visible[nextIndex].id);
       setComment("");
     },
-    [activeIndex, photos],
+    [activeIndex, visible],
   );
+
+  useEffect(() => {
+    if (activeId && !visible.some(photo => photo.id === activeId)) closeViewer();
+  }, [activeId, visible, closeViewer]);
 
   useEffect(() => {
     if (!viewerOpen) return;
@@ -226,6 +236,14 @@ export function GalleryClient({
       </section>
 
       <div className="portal-gallery-toolbar">
+        {albums.length > 0 && <label className="mx-auto mb-4 block max-w-6xl px-3 text-sm">
+          <span className="mb-2 block text-white/65">{c("browse")}</span>
+          <select className="input-field max-w-md" value={albumId} onChange={e => { closeViewer(); setAlbumId(e.target.value); }}>
+            <option value="">{c("all")}</option>
+            {albums.map(a => <option key={a.id} value={a.id}>{a.name} ({photos.filter(p => p.albumId === a.id).length})</option>)}
+            <option value="unassigned">{c("unassigned")} ({photos.filter(p => !p.albumId).length})</option>
+          </select>
+        </label>}
         <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div
             className="flex flex-wrap gap-2"
@@ -344,7 +362,7 @@ export function GalleryClient({
                 className="max-h-full max-w-full object-contain"
               />
 
-              {photos.length > 1 && (
+              {visible.length > 1 && (
                 <>
                   <button
                     type="button"
@@ -370,7 +388,7 @@ export function GalleryClient({
               <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
                 <div className="min-w-0">
                   <p className="text-xs text-white/40">
-                    {activeIndex + 1} / {photos.length}
+                    {activeIndex + 1} / {visible.length}
                   </p>
                   <p className="mt-1 truncate text-sm text-white/80">
                     {active.filename}

@@ -120,6 +120,13 @@
     "errorMissing": "Enter email and password.",
     "errorRate": "Too many attempts. Wait a minute."
   },
+  "collections": {
+    "title": "Albums and cover", "help": "Organize this session without duplicating files. Photos keep their favorites and comments. Access and expiry apply to the whole session.",
+    "newAlbum": "New album", "create": "Create album", "albumName": "Album name", "photos": "photos", "rename": "Save name",
+    "moveUp": "Move {name} up", "moveDown": "Move {name} down", "delete": "Delete album", "deleteHelp": "Delete this album? Photos will become unassigned. Files, favorites and comments will not be deleted.",
+    "empty": "No albums yet.", "cover": "Cover photo", "automaticCover": "Automatic: first available photo", "organize": "Move photos between albums (up to 500 at a time)",
+    "unassigned": "Unassigned", "destination": "Destination album", "moveSelected": "Move selection ({count})", "saving": "Saving…", "error": "Could not save. Reload to see current settings and try again.", "saved": "Changes saved.", "browse": "Browse album", "all": "All photos"
+  },
   "client": {
     "label": "Your sessions",
     "hello": "Hello, {name}",

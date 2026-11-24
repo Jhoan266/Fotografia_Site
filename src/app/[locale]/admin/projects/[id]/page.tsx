@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { UploadPanel } from "@/components/admin/UploadPanel";
 import { AdminPhotoManager } from "@/components/admin/AdminPhotoManager";
+import { GalleryOrganization } from "@/components/admin/GalleryOrganization";
 import { getAuthenticatedSession, hasRecentVaultVerification } from "@/lib/session";
 import { publishProject, updateDeliverySettings } from "@/modules/projects/actions";
 import { getProjectForAdmin } from "@/modules/projects/queries";
@@ -61,6 +62,11 @@ export default async function AdminProjectDetailPage({
           <p className="max-w-2xl text-xs leading-relaxed text-white/55">{t("expiryHelp")}</p>
           <Button type="submit">{t("saveDeliverySettings")}</Button>
         </ActionForm>
+
+        <GalleryOrganization projectId={id} albums={project.albums}
+          key={JSON.stringify([project.albums, project.coverPhotoId, activePhotos.map(p => [p.id, p.albumId])])}
+          photos={activePhotos.map(p => ({ id: p.id, filename: p.filename, albumId: p.albumId }))}
+          coverPhotoId={activePhotos.some(p => p.id === project.coverPhotoId) ? project.coverPhotoId : null} />
 
         <div className="ds-card mt-8 p-5 md:p-6">
           <h2 className="font-display text-2xl">{t("upload")}</h2>

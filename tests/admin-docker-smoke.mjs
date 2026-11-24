@@ -292,6 +292,48 @@ async function login(email, totp) {
     }
     console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
 
+    const organize = (payload, cookie = admin, origin = base) => fetch(base + `/api/projects/${projectId}/organization`, {
+      method: 'POST', headers: { cookie, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    assert.equal((await organize({ action: 'create', name: 'Denied' }, client)).status, 401);
+    assert.equal((await organize({ action: 'create', name: 'Denied' }, '')).status, 401);
+    assert.equal((await organize({ action: 'create', name: 'Denied' }, admin, 'https://untrusted.invalid')).status, 403);
+    const albumAResponse = await organize({ action: 'create', name: 'Ceremonia' });
+    assert.equal(albumAResponse.status, 200);
+    const albumA = await albumAResponse.json();
+    const albumB = await (await organize({ action: 'create', name: 'Retratos' })).json();
+    const foreignAlbum = await prisma.galleryAlbum.create({ data: { projectId: projects[1].id, name: 'Other session' } });
+    assert.equal((await organize({ action: 'assign', albumId: foreignAlbum.id, photoIds: upload.ids })).status, 400);
+    assert.equal((await organize({ action: 'assign', albumId: albumA.id, photoIds: upload.ids })).status, 200);
+    assert.equal(await prisma.photo.count({ where: { projectId, albumId: albumA.id } }), 2);
+    await assert.rejects(prisma.photo.update({ where: { id: photoId }, data: { albumId: foreignAlbum.id } }));
+    assert.equal((await organize({ action: 'rename', albumId: foreignAlbum.id, name: 'Intrusion' })).status, 400);
+    assert.equal((await organize({ action: 'delete', albumId: foreignAlbum.id })).status, 400);
+    const foreignPhoto = await prisma.photo.create({ data: { projectId: projects[1].id, storageKey: 'originals/qa-nonexistent.jpg', filename: 'foreign.jpg' } });
+    assert.equal((await organize({ action: 'cover', photoId: foreignPhoto.id })).status, 400);
+    assert.equal((await organize({ action: 'assign', albumId: albumA.id, photoIds: [photoId, foreignPhoto.id] })).status, 400);
+    assert.equal((await organize({ action: 'reorder', albumIds: [albumB.id, foreignAlbum.id] })).status, 400);
+    assert.equal((await organize({ action: 'reorder', albumIds: [albumB.id, albumA.id] })).status, 200);
+    assert.equal((await organize({ action: 'rename', albumId: albumA.id, name: 'Ceremonia final' })).status, 200);
+    const cover = await prisma.photo.findUniqueOrThrow({ where: { id: upload.ids[1] } });
+    assert.equal((await organize({ action: 'cover', photoId: cover.id })).status, 200);
+    for (const locale of ['es', 'en', 'fr']) {
+      const g = await page(`/${locale}/app/projects/${projectId}`, client);
+      assert.equal(g.r.status, 200);
+      assert(g.html.includes('Ceremonia final') && g.html.includes('Retratos'));
+      assert(g.html.indexOf('Retratos') < g.html.indexOf('Ceremonia final'), 'Albums appear in the saved order');
+      assert(g.html.split('portal-gallery-cover')[1].includes(cover.thumbKey), 'Gallery uses the chosen active cover');
+      const portal = await page(`/${locale}/app`, client);
+      assert(portal.html.includes(cover.thumbKey));
+    }
+    assert.equal((await organize({ action: 'delete', albumId: albumA.id })).status, 200);
+    assert.equal(await prisma.photo.count({ where: { projectId, albumId: null } }), 2);
+    assert.equal(await prisma.comment.count({ where: { photoId } }), 1);
+    assert.equal((await page(photoPath + '/download', client)).r.status, 200);
+    await organize({ action: 'delete', albumId: albumB.id });
+    await organize({ action: 'cover', photoId: null });
+    console.log('PASS albums: admin-only CRUD, cross-session rejection and database constraint, saved ordering, localized galleries, cover, and deletion without file or comment loss');
+
     const settingsPage = `/es/admin/projects/${projectId}`;
     const settingsHtml = (await page(settingsPage, admin)).html;
     assert(settingsHtml.includes('id="gallery-delivery-settings"'), 'Delivery settings are integrated into the existing project panel');
@@ -345,6 +387,7 @@ async function login(email, totp) {
     const restore = (cookie, origin = base) => fetch(base + restorePath, {
       method: 'POST', headers: { cookie, ...(origin ? { Origin: origin } : {}) },
     });
+    assert.equal((await organize({ action: 'cover', photoId })).status, 200);
     assert.equal((await deleteRequest(base)).status, 200);
     assert.equal((await deleteRequest(base)).status, 404);
     assert((await prisma.photo.findUnique({ where: { id: photoId } })).trashedAt);
@@ -370,6 +413,7 @@ async function login(email, totp) {
     assert.equal(orderWithTrashedPhoto.status, 400);
     const hiddenGallery = await page(`/es/app/projects/${projectId}`, client);
     assert(!hiddenGallery.html.includes(photoId));
+    assert(!hiddenGallery.html.includes(photo.thumbKey), 'Trashed cover falls back without exposing the hidden photo');
     const trashPage = await page(`/es/admin/vault?client=${profile.id}&project=${projectId}`, admin);
     assert(trashPage.html.includes('Papelera') && trashPage.html.includes('Restaurar'));
     assert(!trashPage.html.includes(photo.thumbKey));
