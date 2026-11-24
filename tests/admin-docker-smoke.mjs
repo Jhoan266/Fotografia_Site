@@ -1,6 +1,6 @@
 // Run against an isolated local Docker web service configured with the dedicated MFA fixture.
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -293,10 +293,10 @@ async function login(email, totp) {
     console.log('PASS client favorites, album selection, comments, original download, ZIP fallbacks and draft/origin restrictions');
 
     const settingsPage = `/es/admin/projects/${projectId}`;
-    const settingsHtml = (await page(settingsPage, admin)).html.replaceAll('\\"', '"');
-    const settingsRef = settingsHtml.match(/"id":"gallery-delivery-settings","action":"\$F([a-f\d]+)"/)?.[1];
-    assert(settingsRef, 'Delivery settings are integrated into the existing project panel');
-    const actionId = settingsHtml.match(new RegExp(settingsRef + ':\\{"id":"([a-f0-9]+)"'))?.[1];
+    const settingsHtml = (await page(settingsPage, admin)).html;
+    assert(settingsHtml.includes('id="gallery-delivery-settings"'), 'Delivery settings are integrated into the existing project panel');
+    const manifest = JSON.parse(await readFile('.next/server/server-reference-manifest.json', 'utf8'));
+    const actionId = Object.entries(manifest.node).find(([, entry]) => entry.exportedName === 'updateDeliverySettings')?.[0];
     assert(actionId);
     const settings = async (cookie, downloads, expiresOn = '') => {
       const form = new FormData();
