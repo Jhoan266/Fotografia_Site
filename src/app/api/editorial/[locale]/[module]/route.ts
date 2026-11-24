@@ -3,6 +3,7 @@ import { changeEditorial } from "@/modules/editorial/actions";
 import { hasValidSameOrigin } from "@/lib/security";
 import { requireEditor } from "@/modules/editorial/access";
 import { rateLimit } from "@/lib/rate-limit";
+import { readJsonBody, jsonBodyErrorStatus } from "@/lib/json-body";
 
 export async function POST(
   request: NextRequest,
@@ -14,17 +15,16 @@ export async function POST(
     return NextResponse.json({ ok: false }, { status: 403 });
   if (!(await rateLimit("editorial:" + user.id, 60, 60_000)).ok)
     return NextResponse.json({ ok: false }, { status: 429 });
-  const text = await request.text();
-  if (text.length > 120_000)
-    return NextResponse.json({ ok: false }, { status: 413 });
   let body;
   try {
-    body = JSON.parse(text || "null");
-  } catch {
-    return NextResponse.json({ ok: false }, { status: 400 });
+    body = await readJsonBody(request, 480_000);
+  } catch (error) {
+    return NextResponse.json({ ok: false }, { status: jsonBodyErrorStatus(error) });
   }
-  if (!body || typeof body !== "object")
+  if (!body || typeof body !== "object" || Array.isArray(body))
     return NextResponse.json({ ok: false }, { status: 400 });
+  if (JSON.stringify(body).length > 120_000)
+    return NextResponse.json({ ok: false }, { status: 413 });
   const params = await context.params;
   const result = await changeEditorial({
     ...body,

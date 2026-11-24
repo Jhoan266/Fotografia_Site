@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
+import { readJsonBody, jsonBodyErrorStatus } from "@/lib/json-body";
 
 export async function POST(
   request: NextRequest,
@@ -19,8 +20,13 @@ export async function POST(
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body.body !== "string") {
+  let body;
+  try {
+    body = await readJsonBody(request, 16 * 1024);
+  } catch (error) {
+    return NextResponse.json({ error: "invalid_body" }, { status: jsonBodyErrorStatus(error) });
+  }
+  if (!body || typeof body !== "object" || !("body" in body) || typeof body.body !== "string") {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
 

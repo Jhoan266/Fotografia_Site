@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { hasValidSameOrigin } from "@/lib/security";
+import { readJsonBody, jsonBodyErrorStatus } from "@/lib/json-body";
 
 export async function POST(request: NextRequest) {
   const user = await requireUser();
@@ -12,11 +13,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null);
+  let parsed;
+  try {
+    parsed = await readJsonBody(request, 160 * 1024);
+  } catch (error) {
+    return NextResponse.json({ error: "invalid_body" }, { status: jsonBodyErrorStatus(error) });
+  }
+  const body = parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
   const projectId = typeof body?.projectId === "string" ? body.projectId.trim() : "";
   const photoIds: string[] = Array.isArray(body?.photoIds) ? body.photoIds.filter((id: unknown): id is string => typeof id === "string") : [];
 
-  if (!projectId || projectId.length > 128 || photoIds.length > 1000) {
+  if (!projectId || projectId.length > 128 || photoIds.length > 1000 ||
+      photoIds.some((id) => !id || id.length > 128) ||
+      !Array.isArray(body?.photoIds) || photoIds.length !== body.photoIds.length) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
 
