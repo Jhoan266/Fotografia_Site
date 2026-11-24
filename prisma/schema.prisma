@@ -60,7 +60,10 @@ model ClientProfile {
 
 model Project {
   id          String        @id @default(cuid())
-  downloadsEnabled Boolean @default(true)
+  downloadsEnabled Boolean @default(false)
+  watermarkEnabled Boolean @default(true)
+  watermarkText String @default("VISTA PREVIA")
+  deliveryLogs PhotoDeliveryLog[]
   expiresAt DateTime?
   coverPhotoId String?
   coverPhoto Photo? @relation("GalleryCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
@@ -79,6 +82,22 @@ model Project {
   orders      Order[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+model PhotoDeliveryLog {
+  id String @id
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId String
+  clientCode String
+  photoId String?
+  filename String
+  kind String
+  photoCount Int @default(1)
+  requests Int @default(1)
+  firstAt DateTime @default(now())
+  lastAt DateTime @default(now())
+  @@index([projectId, lastAt])
 }
 
 model SelectionSubmission {

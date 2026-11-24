@@ -10,9 +10,12 @@ export async function updateDeliverySettings(locale: string, projectId: string, 
   if (!(await requireRole("ADMIN"))) return { ok: false, error: "unauthorized" };
   const expiresAt = parseGalleryExpiry(String(formData.get("expiresOn") || ""));
   if (expiresAt === undefined) return { ok: false, error: "invalid_date" };
+  const watermarkText = String(formData.get("watermarkText") || "VISTA PREVIA").trim();
+  if (!watermarkText || watermarkText.length > 60 || /[\u0000-\u001f]/.test(watermarkText)) return { ok: false, error: "invalid_input" };
   const result = await prisma.project.updateMany({
     where: { id: projectId },
-    data: { downloadsEnabled: formData.get("downloadsEnabled") === "on", expiresAt },
+    data: { downloadsEnabled: formData.get("downloadsEnabled") === "on", expiresAt,
+      watermarkEnabled: formData.get("watermarkEnabled") === "on", watermarkText },
   });
   if (!result.count) return { ok: false, error: "not_found" };
   revalidatePath(`/${locale}/admin/projects/${projectId}`);

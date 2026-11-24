@@ -120,6 +120,13 @@
     "errorMissing": "Enter email and password.",
     "errorRate": "Too many attempts. Wait a minute."
   },
+  "previewProtection": {
+    "enable": "Protect previews with automatic watermarks", "text": "Watermark text or photographer name (maximum 60 characters)",
+    "help": "Screen previews stay crisp and carry a repeated watermark with a client code. Originals are unchanged. Enabling downloads lets the client obtain the final version without a watermark. This does not block screenshots or detect recordings.",
+    "code": "Client review code: {code}", "activity": "Delivery activity (20 recent records)",
+    "activityHelp": "Authorized requests grouped by photo, type and hour. They do not prove viewing, completed downloads or screenshots. This log does not store email addresses or IP addresses.",
+    "preview": "Preview", "download": "Download", "zip": "ZIP archive", "requests": "{count} requests", "empty": "No requests from this client yet."
+  },
   "proofing": {
     "title": "Final selection", "help": "Select your album photos and confirm when ready (up to 500). Confirmation includes the whole session, not just the visible album or filter.",
     "confirm": "Confirm selection ({count})", "confirmPrompt": "Submit this selection as final? You will need the photographer to reopen it before changing selected photos.",

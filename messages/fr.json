@@ -120,6 +120,13 @@
     "errorMissing": "Entrez email et mot de passe.",
     "errorRate": "Trop de tentatives. Attendez une minute."
   },
+  "previewProtection": {
+    "enable": "Protéger les aperçus avec un filigrane automatique", "text": "Texte du filigrane ou nom du photographe (60 caractères maximum)",
+    "help": "Les aperçus restent nets et portent un filigrane répété avec un code client. Les originaux sont inchangés. Autoriser les téléchargements permet d’obtenir la version finale sans filigrane. Cela ne bloque pas les captures et ne détecte pas les enregistrements.",
+    "code": "Code de consultation du client : {code}", "activity": "Activité de livraison (20 entrées récentes)",
+    "activityHelp": "Requêtes autorisées regroupées par photo, type et heure. Elles ne prouvent ni consultation, ni téléchargement terminé, ni capture d’écran. Ce journal ne contient ni e-mails ni adresses IP.",
+    "preview": "Aperçu", "download": "Téléchargement", "zip": "Archive ZIP", "requests": "{count} requêtes", "empty": "Aucune requête de ce client pour le moment."
+  },
   "proofing": {
     "title": "Sélection finale", "help": "Sélectionnez les photos de votre album puis confirmez (500 maximum). La confirmation comprend toute la séance, pas seulement l’album ou le filtre affiché.",
     "confirm": "Confirmer la sélection ({count})", "confirmPrompt": "Envoyer cette sélection définitive ? Le photographe devra la rouvrir pour modifier les photos sélectionnées.",

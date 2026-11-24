@@ -5,6 +5,7 @@ import { getStorageProvider } from "@/modules/storage";
 import { MAX_ZIP_PHOTOS, ZIP_TIMEOUT_MS, ZipLimitExceeded, planZip, reserveZipExport, streamZip } from "@/modules/photos/zip-export";
 import { contentDispositionAttachment, hasValidSameOrigin } from "@/lib/security";
 import { canDownloadGallery } from "@/modules/projects/delivery-policy";
+import { recordClientDelivery } from "@/modules/photos/delivery-log";
 
 export const runtime = "nodejs";
 
@@ -91,6 +92,7 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
       });
     }
 
+    if (user.role === "CLIENT") await recordClientDelivery(user.id, projectId, "ZIP", "ZIP", null, entries.length);
     const body = streamZip(entries, storage, signal, release, user.role === "CLIENT");
     streaming = true;
     return new NextResponse(body, {

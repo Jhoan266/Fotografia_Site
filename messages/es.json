@@ -120,6 +120,14 @@
     "errorMissing": "Introduce email y contraseña.",
     "errorRate": "Demasiados intentos. Espera un minuto."
   },
+  "previewProtection": {
+    "enable": "Proteger las vistas previas con marca de agua automática",
+    "text": "Texto o nombre del fotógrafo en la marca (máximo 60 caracteres)",
+    "help": "La copia para pantalla se mantiene nítida y lleva una marca repetida con un código del cliente. Los originales no se modifican. Si habilitas descargas, el cliente podrá obtener la versión final sin marca. No bloquea capturas ni detecta grabaciones.",
+    "code": "Código de revisión del cliente: {code}", "activity": "Actividad de entrega (20 registros recientes)",
+    "activityHelp": "Solicitudes autorizadas agrupadas por foto, tipo y hora. No prueban que alguien haya visto la imagen, completado la descarga o hecho una captura. No se registran correos ni direcciones IP en este registro.",
+    "preview": "Vista previa", "download": "Descarga", "zip": "Archivo ZIP", "requests": "{count} solicitudes", "empty": "Todavía no hay solicitudes de este cliente."
+  },
   "proofing": {
     "title": "Selección final", "help": "Selecciona las fotos para el álbum y confirma cuando termines (hasta 500). La confirmación incluye toda la sesión, no solo el subálbum o filtro visible.",
     "confirm": "Confirmar selección ({count})", "confirmPrompt": "¿Enviar esta selección como definitiva? Después necesitarás que el fotógrafo la reabra para cambiar las fotos seleccionadas.",

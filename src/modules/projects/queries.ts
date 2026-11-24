@@ -15,6 +15,7 @@ export function getProjectForAdmin(projectId: string) {
     where: { id: projectId },
     include: {
       selectionSubmissions: { orderBy: { version: "desc" }, take: 1 },
+      deliveryLogs: { orderBy: { lastAt: "desc" }, take: 20 },
       albums: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
       client: { include: { user: true } },
       photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
