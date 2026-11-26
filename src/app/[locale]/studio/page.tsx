@@ -35,7 +35,7 @@ export default async function Studio({
         })
       : [];
   return (
-    <main className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[230px_1fr]">
+    <main className="editorial-workspace mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[230px_1fr]">
       <aside className="space-y-6">
         <h1 className="font-display text-3xl">Estudio de contenido</h1>
         <nav className="grid gap-2">

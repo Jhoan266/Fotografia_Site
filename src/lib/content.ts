@@ -56,7 +56,7 @@ export const gallery: GalleryItem[] = [
   },
   {
     id: "g6",
-    src: "https://images.unsplash.com/photo-1529634597504-8a2f5f6c0b4b?auto=format&fit=crop&w=1400&q=80",
+    src: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1400&q=80",
     alt: "Sesión outdoor con luz natural",
     category: "sesiones",
     span: "wide",

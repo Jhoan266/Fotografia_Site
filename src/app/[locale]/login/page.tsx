@@ -1,33 +1,19 @@
-import { setRequestLocale } from "next-intl/server";
-import { BrandMark } from "@/components/ui/BrandMark";
-import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
-import { LoginForm } from "@/components/auth/LoginForm";
+import {setRequestLocale,getTranslations} from "next-intl/server";
+import {BrandMark} from "@/components/ui/BrandMark";
+import {LocaleSwitcher} from "@/components/ui/LocaleSwitcher";
+import {LoginForm} from "@/components/auth/LoginForm";
+import {readEditorialModule} from "@/modules/editorial/queries";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-
-export default async function LoginPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations("nav");
-
-  return (
-    <main className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 md:px-8">
-        <BrandMark locale={locale} />
-        <div className="flex items-center gap-4">
-          <LocaleSwitcher current={locale} />
-          <Link href={`/${locale}/login`} className="text-sm text-white/70">
-            {t("clientArea")}
-          </Link>
-        </div>
-      </header>
-      <div className="mx-auto flex max-w-6xl items-center px-5 py-16 md:px-8 md:py-24">
-        <LoginForm locale={locale} />
-      </div>
-    </main>
-  );
+export const dynamic="force-dynamic";
+export default async function LoginPage({params}:{params:Promise<{locale:string}>}){
+ const {locale}=await params;setRequestLocale(locale);
+ const t=await getTranslations("nav"),hero=await getTranslations("hero");
+ const {values:media}=await readEditorialModule(locale,"media");
+ return <main className="login-page">
+  <header className="mx-auto flex items-center justify-between"><BrandMark locale={locale}/><div className="flex items-center gap-4"><LocaleSwitcher current={locale} appearance="light"/><Link href={`/${locale}`} className="text-sm text-white/70">{t("portfolio")} ↗</Link></div></header>
+  <div className="login-layout"><aside className="login-art" aria-label={hero("specialty")}>
+   {/* eslint-disable-next-line @next/next/no-img-element */}
+   <img src={media.heroImage} alt={media.heroAlt}/><div className="login-art-copy"><p>{hero("tagline")}</p><small>{hero("brand")} · {hero("location")}</small></div>
+  </aside><div className="login-form-area"><LoginForm locale={locale}/></div></div>
+ </main>;
 }

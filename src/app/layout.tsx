@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, Outfit, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import "./editorial-refresh.css";
 
 const syne = Syne({
   subsets: ["latin"],

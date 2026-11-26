@@ -1,4 +1,5 @@
 import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { SiteHeader } from "./SiteHeader";
 import { Hero } from "./Hero";
 import { PortfolioMosaic } from "./PortfolioMosaic";
@@ -8,6 +9,7 @@ import {
   ProcessSection,
   ServicesSection,
   SiteFooter,
+  GalleryExperience,
 } from "./MarketingSections";
 import { EditorialProvider } from "./EditorialContext";
 import { readEditorialPage } from "@/modules/editorial/queries";
@@ -20,6 +22,7 @@ export async function MarketingPage({
   draft?: boolean;
 }) {
   const content = await readEditorialPage(locale, draft);
+  const baseMessages = await getMessages({ locale });
   if (!draft && content.launch.publicMode === "coming-soon") {
     return (
       <main className="flex min-h-screen items-center justify-center p-8">
@@ -28,19 +31,20 @@ export async function MarketingPage({
     );
   }
   return (
-    <NextIntlClientProvider messages={content.messages}>
+    <NextIntlClientProvider messages={{ ...content.messages, visualRefresh: baseMessages.visualRefresh }}>
       <EditorialProvider
         media={content.media}
         channels={content.channels}
         contactEnabled={content.launch.contactEnabled === "true"}
       >
-        <main style={{ fontFamily: content.design.bodyFont }}>
+        <main className="marketing-site" style={{ fontFamily: content.design.bodyFont }}>
           {content.design.displayFont !== "inherit" && <style>{`#editorial-page h1, #editorial-page h2, #editorial-page h3 { font-family: ${content.design.displayFont}; }`}</style>}
           <div id="editorial-page">
             <SiteHeader locale={locale} />
             <Hero />
             <ServicesSection />
             <PortfolioMosaic />
+            <GalleryExperience />
             <AboutSection />
             <ProcessSection />
             <ContactSection />

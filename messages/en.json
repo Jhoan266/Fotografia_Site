@@ -17,6 +17,12 @@
     "invalid": "Access could not be verified. Check your password or try again later.",
     "deleteError": "The photo could not be deleted. Check that your access is still verified."
   },
+  "visualRefresh": {
+    "navigation": "Main navigation", "menu": "Open menu", "closeMenu": "Close menu", "previous": "Previous photo", "next": "Next photo", "close": "Close viewer",
+    "privateLabel": "Your private gallery", "privateTitle": "Your story continues after the session.",
+    "privateBody": "A thoughtfully designed space to revisit your photographs, choose your favorites and take your time with the final selection.",
+    "private": "Personal, protected access", "proofing": "Favorites, selections and comments", "delivery": "Digital delivery, your way", "yourStory": "One moment, many stories."
+  },
   "meta": {
     "title": "Vera Solís — Photography",
     "description": "Wedding, session and professional book photography in Barcelona."

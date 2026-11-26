@@ -1,48 +1,21 @@
 "use client";
-
 import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { BrandMark } from "@/components/ui/BrandMark";
-import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
-import { useEditorial } from "./EditorialContext";
-
-export function SiteHeader({ locale }: { locale: string }) {
-  const t = useTranslations("nav");
-  const { channels: brand, contactEnabled } = useEditorial();
-  const wa = `https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(brand.whatsappMessage)}`;
-
-  const links = [
-    { href: `#servicios`, label: t("services") },
-    { href: `#portafolio`, label: t("portfolio") },
-    { href: `#sobre-mi`, label: t("about") },
-    { href: `#proceso`, label: t("process") },
-    { href: `#contacto`, label: t("contact") },
-  ];
-
-  return (
-    <header className="absolute inset-x-0 top-0 z-40">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 md:px-8">
-        <BrandMark locale={locale} />
-        <nav className="hidden items-center gap-6 text-sm text-white/70 lg:flex">
-          {links.map((link) => (
-            <a key={link.href} href={link.href} className="hover:text-white">
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          <LocaleSwitcher current={locale} />
-          <Link
-            href={`/${locale}/login`}
-            className="hidden text-sm text-white/70 hover:text-white sm:inline"
-          >
-            {t("clientArea")}
-          </Link>
-          {contactEnabled && <a href={wa} target="_blank" rel="noreferrer" className="btn-wa !py-2 !text-xs">
-            {t("whatsapp")}
-          </a>}
-        </div>
-      </div>
-    </header>
-  );
+import {useState} from "react";
+import {useTranslations} from "next-intl";
+import {LocaleSwitcher} from "@/components/ui/LocaleSwitcher";
+export function SiteHeader({locale}:{locale:string}){
+ const t=useTranslations("nav"), hero=useTranslations("hero"), ui=useTranslations("visualRefresh");
+ const [open,setOpen]=useState(false);
+ const links=[["#servicios",t("services")],["#portafolio",t("portfolio")],["#sobre-mi",t("about")],["#proceso",t("process")],["#contacto",t("contact")]];
+ return <header className="public-header" onKeyDown={e=>{if(e.key==="Escape")setOpen(false);}}>
+  <div className="public-header-inner">
+   <Link href={`/${locale}`} className="public-brand" aria-label={hero("brand")}><span>{hero("brand")}</span><small>{hero("specialty")}</small></Link>
+   <nav className="public-desktop-nav" aria-label={ui("navigation")}>{links.map(([href,label])=><a key={href} href={href}>{label}</a>)}</nav>
+   <div className="public-header-actions"><LocaleSwitcher current={locale} appearance="light"/>
+    <Link href={`/${locale}/login`} className="public-client-link">{t("clientArea")}<span aria-hidden>↗</span></Link>
+    <button type="button" className="public-menu-toggle" aria-controls="public-mobile-menu" aria-expanded={open} aria-label={open?ui("closeMenu"):ui("menu")} onClick={()=>setOpen(!open)}><span aria-hidden>{open?"×":"☰"}</span></button>
+   </div>
+  </div>
+  {open&&<nav id="public-mobile-menu" className="public-mobile-nav" aria-label={ui("navigation")}>{links.map(([href,label])=><a key={href} href={href} onClick={()=>setOpen(false)}>{label}<span aria-hidden>↗</span></a>)}<Link href={`/${locale}/login`}>{t("clientArea")}<span aria-hidden>↗</span></Link></nav>}
+ </header>;
 }
