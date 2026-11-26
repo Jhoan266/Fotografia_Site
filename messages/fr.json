@@ -17,6 +17,12 @@
     "invalid": "La vérification a échoué. Vérifiez votre mot de passe ou réessayez plus tard.",
     "deleteError": "La photo n’a pas pu être supprimée. Vérifiez que votre accès est toujours valide."
   },
+  "visualRefresh": {
+    "navigation": "Navigation principale", "menu": "Ouvrir le menu", "closeMenu": "Fermer le menu", "previous": "Photo précédente", "next": "Photo suivante", "close": "Fermer la visionneuse",
+    "privateLabel": "Votre galerie privée", "privateTitle": "Votre histoire continue après la séance.",
+    "privateBody": "Un espace soigné pour retrouver vos photographies, choisir vos favoris et préparer votre sélection finale à votre rythme.",
+    "private": "Accès personnel et protégé", "proofing": "Favoris, sélection et commentaires", "delivery": "Une livraison numérique à votre image", "yourStory": "Un instant, tant d’histoires."
+  },
   "meta": {
     "title": "Vera Solís — Photographie",
     "description": "Photographie de mariage, séances et book professionnel à Barcelone."

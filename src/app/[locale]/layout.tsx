@@ -23,7 +23,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <div className="atmosphere min-h-screen">{children}</div>
+      <div lang={locale} className="atmosphere min-h-screen">{children}</div>
     </NextIntlClientProvider>
   );
 }

@@ -1,106 +1,73 @@
 "use client";
-
-import { useTranslations } from "next-intl";
-import { useEditorial } from "./EditorialContext";
-
-export function ServicesSection() {
-  const t = useTranslations("services");
-  const items = ["weddings", "sessions", "book"] as const;
-
-  return (
-    <section id="servicios" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
-      <p className="section-label">{t("label")}</p>
-      <h2 className="mt-3 max-w-2xl font-display text-3xl font-semibold md:text-5xl">
-        {t("title")}
-      </h2>
-      <div className="mt-12 grid gap-10 md:grid-cols-3">
-        {items.map((key, i) => (
-          <div key={key} className="border-t border-white/10 pt-6">
-            <p className="text-sand text-xs tracking-[0.25em]">0{i + 1}</p>
-            <h3 className="mt-3 font-display text-2xl">{t(`items.${key}.title`)}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-white/60">
-              {t(`items.${key}.body`)}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+import Link from "next/link";
+import {useLocale,useTranslations} from "next-intl";
+import {useEditorial} from "./EditorialContext";
+export function ServicesSection(){
+ const t=useTranslations("services"),{media}=useEditorial();
+ const items=[["weddings","g1"],["sessions","g3"],["book","g5"]] as const;
+ return <section id="servicios" className="public-section public-services">
+  <div className="public-section-heading"><p className="public-eyebrow">{t("label")}</p><h2>{t("title")}</h2></div>
+  <div className="public-service-grid">{items.map(([key,image],i)=><a href="#contacto" className="public-service" key={key}>
+   <div className="public-service-image">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={media[image+"Image"]} alt={media[image+"Alt"]} loading="lazy"/><span className="public-service-index">0{i+1}</span>
+   </div><div className="public-service-copy"><h3>{t(`items.${key}.title`)}</h3><span aria-hidden>↗</span><p>{t(`items.${key}.body`)}</p></div>
+  </a>)}</div>
+ </section>;
 }
-
-export function AboutSection() {
-  const t = useTranslations("about");
-  const { media } = useEditorial();
-  return (
-    <section id="sobre-mi" className="mx-auto grid max-w-7xl gap-10 px-5 py-24 md:grid-cols-2 md:px-8">
-      <div className="relative min-h-[420px] overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={media.aboutImage} alt={media.aboutAlt} className="absolute inset-0 h-full w-full object-cover" />
-      </div>
-      <div className="flex flex-col justify-center">
-        <p className="section-label">{t("label")}</p>
-        <h2 className="mt-3 font-display text-3xl font-semibold md:text-5xl">{t("title")}</h2>
-        <p className="mt-6 max-w-md font-serif text-xl italic text-white/85">
-          {t("body")}
-        </p>
-      </div>
-    </section>
-  );
+export function GalleryExperience(){
+ const t=useTranslations("visualRefresh"),nav=useTranslations("nav"),locale=useLocale(),{media}=useEditorial();
+ return <section className="public-experience"><div className="public-section public-experience-inner">
+  <div className="public-experience-copy"><p className="public-eyebrow">{t("privateLabel")}</p><h2>{t("privateTitle")}</h2><p>{t("privateBody")}</p>
+   <ul>{["private","proofing","delivery"].map((key,i)=><li key={key}><span aria-hidden>0{i+1}</span>{t(key)}</li>)}</ul>
+   <Link className="public-button" href={`/${locale}/login`}>{nav("clientArea")}<span aria-hidden>↗</span></Link>
+  </div>
+  <div className="public-gallery-illustration" aria-hidden="true">
+   <div className="public-gallery-browser"><span/><span/><span/><small>{t("privateLabel")}</small><span>⌁</span></div>
+   <div className="public-gallery-illustration-cover">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={media.g1Image||media.heroImage} alt="" loading="lazy"/><div><span>{t("privateLabel")}</span><strong>{t("yourStory")}</strong></div>
+   </div>
+   <div className="public-gallery-illustration-grid">{["g3","g5","g4"].map((id,i)=><div key={id}>
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={media[id+"Image"]||media.heroImage} alt="" loading="lazy"/><span>{i===1?"♥":"♡"}</span>
+   </div>)}</div>
+   <div className="public-gallery-note"><span>✓</span>{t("private")}</div>
+  </div>
+ </div></section>;
 }
-
-export function ProcessSection() {
-  const t = useTranslations("process");
-  const steps = ["1", "2", "3", "4"] as const;
-  return (
-    <section id="proceso" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
-      <p className="section-label">{t("label")}</p>
-      <h2 className="mt-3 font-display text-3xl font-semibold md:text-5xl">{t("title")}</h2>
-      <div className="mt-12 grid gap-8 md:grid-cols-4">
-        {steps.map((step) => (
-          <div key={step} className="border-l border-sand/40 pl-4">
-            <p className="text-xs tracking-[0.25em] text-sand">{step.padStart(2, "0")}</p>
-            <h3 className="mt-3 font-display text-xl">{t(`steps.${step}.title`)}</h3>
-            <p className="mt-2 text-sm text-white/60">{t(`steps.${step}.body`)}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+export function AboutSection(){
+ const t=useTranslations("about"),hero=useTranslations("hero"),{media}=useEditorial();
+ return <section id="sobre-mi" className="public-section public-about">
+  <div className="public-about-photo">
+   {/* eslint-disable-next-line @next/next/no-img-element */}
+   <img src={media.aboutImage} alt={media.aboutAlt} loading="lazy"/><span className="public-about-monogram" aria-hidden>{hero("brand").split(" ").map(w=>w[0]).slice(0,2).join("")}</span>
+  </div><div className="public-about-copy"><p className="public-eyebrow">{t("label")}</p><h2>{t("title")}</h2><p>{t("body")}</p>
+   <div className="public-signature">{hero("brand")}<small>{hero("specialty")} · {hero("location")}</small></div>
+  </div>
+ </section>;
 }
-
-export function ContactSection() {
-  const t = useTranslations("contact");
-  const { channels: brand, contactEnabled } = useEditorial();
-  const wa = `https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(brand.whatsappMessage)}`;
-  return (
-    <section id="contacto" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
-      <div className="border border-white/10 bg-white/[0.02] px-6 py-14 md:px-12">
-        <p className="section-label">{t("label")}</p>
-        <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold md:text-5xl">
-          {t("title")}
-        </h2>
-        <p className="mt-4 max-w-lg text-white/65">{t("body")}</p>
-        {contactEnabled && <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <a href={wa} target="_blank" rel="noreferrer" className="btn-wa">
-            {t("cta")}
-          </a>
-          <a href={`mailto:${brand.email}`} className="text-sm text-sand hover:underline">
-            {brand.email}
-          </a>
-        </div>}
-      </div>
-    </section>
-  );
+export function ProcessSection(){
+ const t=useTranslations("process");
+ return <section id="proceso" className="public-section public-process"><div className="public-section-heading"><p className="public-eyebrow">{t("label")}</p><h2>{t("title")}</h2></div>
+  <ol className="public-process-grid">{["1","2","3","4"].map(step=><li key={step}><span className="public-process-number">{step.padStart(2,"0")}</span><h3>{t(`steps.${step}.title`)}</h3><p>{t(`steps.${step}.body`)}</p></li>)}</ol>
+ </section>;
 }
-
-export function SiteFooter() {
-  const t = useTranslations("footer");
-  return (
-    <footer className="border-t border-white/10 px-5 py-10 md:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-white/45 md:flex-row md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} Vera Solís. {t("rights")}</p>
-        <p>{t("placeholder")}</p>
-      </div>
-    </footer>
-  );
+export function ContactSection(){
+ const t=useTranslations("contact"),{media,channels,contactEnabled}=useEditorial();
+ const wa=`https://wa.me/${channels.whatsapp}?text=${encodeURIComponent(channels.whatsappMessage)}`;
+ return <section id="contacto" className="public-contact">
+  {/* eslint-disable-next-line @next/next/no-img-element */}
+  <img className="public-contact-image" src={media.g4Image||media.heroImage} alt="" loading="lazy"/><div className="public-contact-shade"/>
+  <div className="public-section public-contact-inner"><p className="public-eyebrow">{t("label")}</p><h2>{t("title")}</h2><p>{t("body")}</p>
+   {contactEnabled&&<div className="public-actions"><a className="public-button" href={wa} target="_blank" rel="noreferrer">{t("cta")}<span aria-hidden>↗</span></a><a className="public-contact-email" href={`mailto:${channels.email}`}>{channels.email}</a></div>}
+  </div>
+ </section>;
+}
+export function SiteFooter(){
+ const t=useTranslations("footer"),nav=useTranslations("nav"),hero=useTranslations("hero"),locale=useLocale();
+ return <footer className="public-footer"><div className="public-section">
+  <div className="public-footer-top"><Link className="public-brand" href={`/${locale}`}><span>{hero("brand")}</span><small>{hero("specialty")}</small></Link><nav aria-label={hero("brand")}><a href="#portafolio">{nav("portfolio")}</a><a href="#contacto">{nav("contact")}</a><Link href={`/${locale}/login`}>{nav("clientArea")} ↗</Link></nav></div>
+  <div className="public-footer-bottom"><p>© {new Date().getFullYear()} {hero("brand")}. {t("rights")}</p><p>{t("placeholder")}</p></div>
+ </div></footer>;
 }
