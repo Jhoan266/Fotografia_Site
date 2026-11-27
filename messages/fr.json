@@ -407,5 +407,21 @@
       "same": "Choisissez un mot de passe différent.",
       "rate": "Trop de tentatives. Attendez 15 minutes avant de réessayer."
     }
+  },
+  "accountRecovery": {
+    "label": "Récupération du compte",
+    "title": "Retrouvez votre galerie.",
+    "help": "Demandez un code au photographe par votre canal habituel. Saisissez-le ici puis choisissez un nouveau mot de passe. Le code expire dans 15 minutes et ne fonctionne qu’une fois. Ce formulaire est réservé aux clients.",
+    "code": "Code de récupération",
+    "save": "Réinitialiser le mot de passe",
+    "back": "Retour à la connexion",
+    "forgot": "Mot de passe oublié ?",
+    "invalid": "Le code est invalide, expiré ou déjà utilisé. Demandez un nouveau code au photographe.",
+    "adminTitle": "Rétablir l’accès du client",
+    "adminHelp": "Vérifiez d’abord votre identité. Un nouveau code annule le précédent. Confirmez l’identité du client avant de partager le code par un canal privé.",
+    "generate": "Générer un code",
+    "generating": "Génération…",
+    "adminError": "Impossible de générer le code. Vérifiez à nouveau votre mot de passe ou patientez avant de réessayer.",
+    "share": "Valable 15 minutes et une seule fois. Partagez ce code en privé avec cette adresse : {url}. L’ancien mot de passe et toutes les sessions seront invalidés lorsque le client l’utilisera."
   }
 }

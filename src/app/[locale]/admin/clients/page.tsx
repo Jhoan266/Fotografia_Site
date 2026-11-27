@@ -1,4 +1,5 @@
 import { ActionForm } from "@/components/admin/ActionForm";
+import { ClientRecovery } from "@/components/admin/ClientRecovery";
 import { Button, EmptyState, FormField } from "@/components/ui/design-system";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -47,6 +48,7 @@ export default async function AdminClientsPage({
                 <p className="mt-1 text-xs text-sand">
                   {c._count.projects} {t("projects").toLowerCase()}
                 </p>
+                <ClientRecovery userId={c.user.id} locale={locale} />
               </li>
             ))}
           </ul>

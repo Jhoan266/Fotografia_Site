@@ -408,5 +408,21 @@
       "same": "Elige una contraseña diferente de la actual.",
       "rate": "Demasiados intentos. Espera 15 minutos antes de volver a probar."
     }
+  },
+  "accountRecovery": {
+    "label": "Recuperación de acceso",
+    "title": "Vuelve a tu galería.",
+    "help": "Solicita un código de recuperación al fotógrafo por vuestro canal habitual. Introdúcelo aquí y elige una nueva contraseña. El código caduca en 15 minutos y solo se puede usar una vez. Este formulario es para clientes.",
+    "code": "Código de recuperación",
+    "save": "Restablecer contraseña",
+    "back": "Volver al acceso",
+    "forgot": "¿Olvidaste tu contraseña?",
+    "invalid": "El código no es válido, ha caducado o ya se ha utilizado. Solicita uno nuevo al fotógrafo.",
+    "adminTitle": "Recuperar acceso del cliente",
+    "adminHelp": "Verifica primero tu identidad. Al generar un código se anula cualquier código anterior. Confirma la identidad del cliente antes de compartirlo por un canal privado.",
+    "generate": "Generar código de recuperación",
+    "generating": "Generando…",
+    "adminError": "No se pudo generar el código. Verifica tu contraseña de nuevo o espera antes de repetir.",
+    "share": "Válido durante 15 minutos y de un solo uso. Comparte este código de forma privada junto con esta dirección: {url}. La contraseña anterior y todas las sesiones se invalidarán cuando el cliente lo utilice."
   }
 }
