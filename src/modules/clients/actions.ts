@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { requireRole } from "@/lib/session";
+import { validNewPassword } from "@/lib/password-policy";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,8 +23,7 @@ export async function createClientFromForm(locale: string, formData: FormData) {
     name.length > 120 ||
     !EMAIL_RE.test(email) ||
     email.length > 254 ||
-    password.length < 12 ||
-    password.length > 128 ||
+    !validNewPassword(password) ||
     phoneRaw.length > 40 ||
     notesRaw.length > 2000
   ) {
@@ -41,6 +41,7 @@ export async function createClientFromForm(locale: string, formData: FormData) {
       email,
       name,
       passwordHash,
+      mustChangePassword: true,
       role: "CLIENT",
       clientProfile: {
         create: {

@@ -684,6 +684,60 @@ async function login(email, totp) {
     await prisma.user.update({ where: { id: ids[1] }, data: { editorialDesigner: false } });
   }
 
+  {
+    const email = `${tag}-onboarding@example.invalid`;
+    const clientsPage = await page('/es/admin/clients', admin);
+    const created = await submit('/es/admin/clients', clientsPage.html,
+      { name: 'Password onboarding fixture', email, password }, admin, 'new-client');
+    assert.equal(created.r.status, 200);
+    const account = await prisma.user.findUniqueOrThrow({ where: { email }, include: { clientProfile: true } });
+    ids.push(account.id);
+    assert.equal(account.mustChangePassword, true, 'New clients must replace their temporary password');
+    const pending = await login(email);
+    const secondPending = await login(email);
+    assert.equal((await page('/es/app', pending)).r.headers.get('location'), '/es/account/password');
+    assert.equal((await page('/api/photos/download-zip?projectId=' + projectId, pending)).r.status, 401);
+    assert.equal((await page('/api/media/originals/private-probe.jpg', pending)).r.status, 401);
+    const path = '/es/account/password';
+    const passwordPage = await page(path, pending);
+    assert.equal(passwordPage.r.status, 200);
+    const nextPassword = randomUUID() + 'New!';
+    const values = { currentPassword: password, newPassword: nextPassword, confirmation: nextPassword };
+    const wrong = await submit(path, passwordPage.html, { ...values, currentPassword: password + 'wrong' }, pending, 'password-change');
+    assert.equal(wrong.r.status, 200);
+    const long = '😀'.repeat(19);
+    assert.equal((await submit(path, passwordPage.html, { ...values, newPassword: long, confirmation: long }, pending, 'password-change')).r.status, 200);
+    assert.equal((await prisma.user.findUniqueOrThrow({where:{id:account.id}})).passwordHash, account.passwordHash);
+    const csrf = await submit(path, passwordPage.html, values, pending, 'password-change', { Origin: 'https://untrusted.example' });
+    assert.notEqual(csrf.r.status, 303);
+    const key = `password-change:${account.id}`;
+    await prisma.rateLimitBucket.upsert({ where:{key}, create:{key,count:6,resetAt:new Date(Date.now()+900_000)}, update:{count:6,resetAt:new Date(Date.now()+900_000)} });
+    assert.equal((await submit(path, passwordPage.html, values, pending, 'password-change')).r.status, 200);
+    assert.equal((await prisma.user.findUniqueOrThrow({where:{id:account.id}})).passwordHash, account.passwordHash);
+    await prisma.rateLimitBucket.deleteMany({where:{key}});
+    const [changed, racingLogin] = await Promise.all([
+      submit(path, passwordPage.html, values, pending, 'password-change'), attemptLogin(email),
+    ]);
+    assert.equal(changed.r.status, 303);
+    assert(changed.r.headers.get('location').includes('passwordChanged=1'));
+    const updated = await prisma.user.findUniqueOrThrow({where:{id:account.id}});
+    assert.equal(updated.mustChangePassword, false);
+    assert(await bcrypt.compare(nextPassword, updated.passwordHash));
+    assert.equal(await prisma.authSession.count({where:{userId:account.id}}), 0, 'Password change revokes concurrent old-password logins');
+    const racedCookie = racingLogin.headers.getSetCookie().find(c=>c.startsWith('vs_session='))?.split(';')[0];
+    for(const oldCookie of [pending, secondPending, ...(racedCookie?[racedCookie]:[])]) {
+      assert.equal((await page(path, oldCookie)).r.status, 307);
+    }
+    assert.notEqual((await attemptLogin(email)).status, 303);
+    const loginPage = await page('/es/login');
+    const fresh = await submit('/es/login', loginPage.html, { email, password: nextPassword, locale:'es' });
+    assert.equal(fresh.r.status, 303);
+    const freshCookie = fresh.r.headers.getSetCookie().find(c=>c.startsWith('vs_session='))?.split(';')[0];
+    assert(freshCookie);
+    assert.equal((await page('/es/app', freshCookie)).r.status, 200);
+    console.log('PASS forced password onboarding, byte limits, current-password verification, origin/rate rejection, all-session revocation and concurrent login protection');
+  }
+
   const secondAdmin = await login(adminEmail,fixtureCode(Math.floor(Date.now()/30_000)+1));
   assert.equal((await exportRequest(secondAdmin)).status, 403);
   const logoutPage = await page('/es/admin/vault', admin);
@@ -703,6 +757,7 @@ async function login(email, totp) {
 
  } finally {
   await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.flatMap(id=>['preview','download','zip'].map(kind=>`photo-delivery:${kind}:${id}`))}}});
+  await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.map(id=>`password-change:${id}`)}}});
   await prisma.photoAuditEvent.deleteMany({where:{actorId:{in:ids}}});
   await prisma.user.deleteMany({where:{id:{in:ids}}});
   await prisma.$disconnect();

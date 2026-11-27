@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { endSession, startSession } from "@/lib/session";
 import { clearRateLimit, rateLimit } from "@/lib/rate-limit";
+import { fitsPasswordLimit, validNewPassword } from "@/lib/password-policy";
 
 export type LoginState = {
   error?: string;
@@ -30,7 +31,7 @@ export async function loginAction(
   const requestedLocale = String(formData.get("locale") || "es");
   const locale = locales.has(requestedLocale) ? requestedLocale : "es";
 
-  if (!email || !password || email.length > 254 || password.length > 128) {
+  if (!email || !fitsPasswordLimit(password) || email.length > 254) {
     return { error: "invalid" };
   }
 
@@ -78,12 +79,15 @@ export async function loginAction(
 
   await clearRateLimit(emailLimitKey);
 
-  await startSession({
+  const started = await startSession({
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
-  }, user.role === "ADMIN");
+  }, user.role === "ADMIN", user.passwordHash);
+  if (!started) return { error: "invalid" };
+
+  if (user.mustChangePassword) redirect(`/${locale}/account/password`);
 
   if (user.role === "ADMIN") {
     redirect(`/${locale}/admin`);
@@ -99,8 +103,8 @@ export async function logoutAction(locale = "es") {
 }
 
 export async function hashPassword(password: string) {
-  if (password.length < 12 || password.length > 128) {
-    throw new Error("Password must be between 12 and 128 characters.");
+  if (!validNewPassword(password)) {
+    throw new Error("Password must have at least 12 characters and at most 72 UTF-8 bytes.");
   }
   return bcrypt.hash(password, 12);
 }

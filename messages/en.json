@@ -384,5 +384,28 @@
     "collections": "Your collections",
     "collectionsIntro": "Images, people and stories. Every session in its own space.",
     "contentStudio": "Design my website"
+  },
+  "accountSecurity": {
+    "label": "Your account, protected",
+    "title": "Change password",
+    "firstTitle": "Create your personal password.",
+    "firstHelp": "Before viewing your photographs, replace the temporary password with one only you know.",
+    "description": "You need your current password. Saving signs out all your sessions; sign in again with the new password.",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Repeat new password",
+    "help": "Use at least 12 characters. Avoid very long passwords: accents and emoji take more space.",
+    "temporaryHelp": "The client must change this password before accessing photographs. Use 12–72 plain characters; accents and emoji reduce the limit.",
+    "save": "Save password",
+    "saving": "Saving…",
+    "back": "Back",
+    "success": "Password updated. All sessions have been signed out. Sign in with your new password.",
+    "errors": {
+      "unauthorized": "Your session is no longer valid. Sign in again.",
+      "invalid": "Passwords must match and contain at least 12 characters. Shorten the new password if it is very long.",
+      "current": "The current password is incorrect.",
+      "same": "Choose a different password.",
+      "rate": "Too many attempts. Wait 15 minutes before trying again."
+    }
   }
 }

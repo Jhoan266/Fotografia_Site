@@ -5,8 +5,9 @@ import {LoginForm} from "@/components/auth/LoginForm";
 import {readEditorialModule} from "@/modules/editorial/queries";
 import Link from "next/link";
 export const dynamic="force-dynamic";
-export default async function LoginPage({params}:{params:Promise<{locale:string}>}){
+export default async function LoginPage({params,searchParams}:{params:Promise<{locale:string}>,searchParams:Promise<{passwordChanged?:string}>}){
  const {locale}=await params;setRequestLocale(locale);
+ const passwordChanged=(await searchParams).passwordChanged==="1";
  const t=await getTranslations("nav"),hero=await getTranslations("hero");
  const {values:media}=await readEditorialModule(locale,"media");
  return <main className="login-page">
@@ -14,6 +15,6 @@ export default async function LoginPage({params}:{params:Promise<{locale:string}
   <div className="login-layout"><aside className="login-art" aria-label={hero("specialty")}>
    {/* eslint-disable-next-line @next/next/no-img-element */}
    <img src={media.heroImage} alt={media.heroAlt}/><div className="login-art-copy"><p>{hero("tagline")}</p><small>{hero("brand")} · {hero("location")}</small></div>
-  </aside><div className="login-form-area"><LoginForm locale={locale}/></div></div>
+  </aside><div className="login-form-area"><LoginForm locale={locale} passwordChanged={passwordChanged}/></div></div>
  </main>;
 }

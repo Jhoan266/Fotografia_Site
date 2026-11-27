@@ -16,6 +16,7 @@ export default async function AdminClientsPage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
+  const security = await getTranslations("accountSecurity");
   const clients = await listClientsForAdmin();
 
   return (
@@ -71,9 +72,10 @@ export default async function AdminClientsPage({
             type="password"
             required
             minLength={12}
-            maxLength={128}
+            maxLength={72}
             autoComplete="new-password"
           />
+          <p className="text-sm text-white/65">{security("temporaryHelp")}</p>
           <label className="block space-y-2">
             <span className="text-[11px] tracking-[0.2em] text-white/50 uppercase">
               {t("notes")}

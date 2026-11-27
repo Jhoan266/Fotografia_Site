@@ -6,8 +6,9 @@ import { loginAction, LoginState } from "@/lib/auth";
 
 const initial: LoginState = {};
 
-export function LoginForm({ locale }: { locale: string }) {
+export function LoginForm({ locale, passwordChanged = false }: { locale: string; passwordChanged?: boolean }) {
   const t = useTranslations("login");
+  const security = useTranslations("accountSecurity");
   const [state, formAction, pending] = useActionState(loginAction, initial);
 
   const errorMessage =
@@ -22,6 +23,7 @@ export function LoginForm({ locale }: { locale: string }) {
   return (
     <form action={formAction} className="mx-auto w-full max-w-md space-y-6">
       <input type="hidden" name="locale" value={locale} />
+      {passwordChanged && <p role="status" className="text-sm text-white/80">{security("success")}</p>}
       <div>
         <h1 className="font-display text-4xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="mt-3 text-sm text-white/55">{t("subtitle")}</p>

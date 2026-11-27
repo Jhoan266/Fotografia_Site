@@ -20,6 +20,7 @@ export default async function AdminLayout({
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
   const a = await getTranslations("atelier");
+  const security = await getTranslations("accountSecurity");
   return (
     <div className="studio-shell atelier-shell">
       <a href="#studio-content" className="studio-skip">
@@ -60,6 +61,7 @@ export default async function AdminLayout({
             <StudioIcon name="external" />
             {t("studio.visitSite")}
           </Link>
+          <Link href={`/${locale}/account/password`} className="studio-nav-link ds-focus"><StudioIcon name="lock" />{security("title")}</Link>
           <form
             action={async () => {
               "use server";
@@ -96,6 +98,7 @@ export default async function AdminLayout({
             <span className="text-sm">{t("panel")}</span>
           </div>
           <LocaleSwitcher current={locale} />
+          <Link href={`/${locale}/account/password`} className="text-xs">{security("title")}</Link>
         </header>
         <main id="studio-content" className="studio-main">
           {children}

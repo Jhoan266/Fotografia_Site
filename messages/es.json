@@ -385,5 +385,28 @@
     "collections": "Tus colecciones",
     "collectionsIntro": "Imágenes, personas e historias. Cada sesión, en su propio espacio.",
     "contentStudio": "Diseñar mi web"
+  },
+  "accountSecurity": {
+    "label": "Tu cuenta, protegida",
+    "title": "Cambiar contraseña",
+    "firstTitle": "Crea tu contraseña personal.",
+    "firstHelp": "Antes de ver tus fotografías, sustituye la clave temporal por una que solo tú conozcas.",
+    "description": "Necesitas tu contraseña actual. Al guardar se cerrarán todas tus sesiones y podrás entrar con la nueva.",
+    "current": "Contraseña actual",
+    "new": "Nueva contraseña",
+    "confirm": "Repite la nueva contraseña",
+    "help": "Usa al menos 12 caracteres. Evita claves demasiado largas: los acentos y emojis ocupan más espacio.",
+    "temporaryHelp": "El cliente deberá cambiar esta clave antes de acceder a sus fotos. Usa de 12 a 72 caracteres simples; los acentos y emojis reducen el límite.",
+    "save": "Guardar contraseña",
+    "saving": "Guardando…",
+    "back": "Volver",
+    "success": "Contraseña actualizada. Todas tus sesiones se han cerrado. Entra con la nueva contraseña.",
+    "errors": {
+      "unauthorized": "La sesión ya no es válida. Vuelve a iniciar sesión.",
+      "invalid": "Las contraseñas deben coincidir y tener al menos 12 caracteres. Si la nueva es muy larga, acórtala.",
+      "current": "La contraseña actual no es correcta.",
+      "same": "Elige una contraseña diferente de la actual.",
+      "rate": "Demasiados intentos. Espera 15 minutos antes de volver a probar."
+    }
   }
 }

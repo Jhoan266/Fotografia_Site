@@ -33,6 +33,7 @@ model User {
   email         String         @unique
   editorialDesigner Boolean @default(false)
   passwordHash  String
+  mustChangePassword Boolean @default(false)
   lastTotpStep  Int?
   name          String
   role          Role
