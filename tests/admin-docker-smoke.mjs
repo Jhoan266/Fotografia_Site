@@ -26,7 +26,7 @@ function fixtureCode(step) {
 }
 function decode(s) { return s.replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
 async function page(path, cookie='') {
- const r = await fetch(base+path,{headers:{cookie},redirect:'manual'});
+ const r = await fetch(base+path,{headers:{cookie},redirect:'manual',signal:AbortSignal.timeout(30_000)});
  return {r,html:await r.text()};
 }
 async function submit(path, html, values, cookie='', formId, extraHeaders={}) {
@@ -39,7 +39,7 @@ async function submit(path, html, values, cookie='', formId, extraHeaders={}) {
   if(attrs.type==='hidden' && attrs.name) body.append(attrs.name,attrs.value||'');
  }
  for(const [key,value] of Object.entries(values)) body.set(key,value);
- const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base,...extraHeaders},body,redirect:'manual'});
+ const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:base,...extraHeaders},body,redirect:'manual',signal:AbortSignal.timeout(30_000)});
  return {r,html:await r.text()};
 }
 const proxyToken = process.env.TRUSTED_PROXY_TOKEN;
@@ -699,6 +699,7 @@ async function login(email, totp) {
     const path = '/es/account/password';
     const passwordPage = await page(path, pending);
     assert.equal(passwordPage.r.status, 200);
+    console.log('PASS pending-account sign-in and protected password page');
     const nextPassword = randomUUID() + 'New!';
     const values = { currentPassword: password, newPassword: nextPassword, confirmation: nextPassword };
     const wrong = await submit(path, passwordPage.html, { ...values, currentPassword: password + 'wrong' }, pending, 'password-change');
@@ -713,6 +714,7 @@ async function login(email, totp) {
     assert.equal((await submit(path, passwordPage.html, values, pending, 'password-change')).r.status, 200);
     assert.equal((await prisma.user.findUniqueOrThrow({where:{id:account.id}})).passwordHash, account.passwordHash);
     await prisma.rateLimitBucket.deleteMany({where:{key}});
+    console.log('PASS password validation, origin and rate rejection without writes');
     const [changed, racingLogin] = await Promise.all([
       submit(path, passwordPage.html, values, pending, 'password-change'), attemptLogin(email),
     ]);
