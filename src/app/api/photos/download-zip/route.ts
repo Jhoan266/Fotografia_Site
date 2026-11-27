@@ -6,6 +6,7 @@ import { MAX_ZIP_PHOTOS, ZIP_TIMEOUT_MS, ZipLimitExceeded, planZip, reserveZipEx
 import { contentDispositionAttachment, hasValidSameOrigin } from "@/lib/security";
 import { canDownloadGallery } from "@/modules/projects/delivery-policy";
 import { recordClientDelivery } from "@/modules/photos/delivery-log";
+import { limitClientDelivery } from "@/modules/photos/client-delivery-limit";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,11 @@ async function downloadZip(request: NextRequest, role: "ADMIN" | "CLIENT") {
     (project.client.userId !== user.id || !canDownloadGallery(project))
   ) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (user.role === "CLIENT") {
+    const limited = await limitClientDelivery(user.id, "zip");
+    if (limited) return limited;
   }
 
   const release = reserveZipExport(user.id);

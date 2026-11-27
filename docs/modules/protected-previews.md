@@ -52,6 +52,21 @@ por cuenta, sesión, foto/tipo y hora, con contador y fechas. El panel muestra l
 completa. Se conserva en la base de datos de la sesión y se elimina al eliminarla.
 La nueva tabla tiene RLS. No se añaden rastreadores externos.
 
+## Límite de solicitudes por cliente
+
+Cada cuenta dispone de 600 solicitudes de vistas previas, 60 de descarga individual
+y 6 de ZIP por minuto. Las rutas de descarga individual y de original comparten
+el mismo límite. Cambiar de foto, sesión de acceso o parámetros de URL no renueva
+el cupo. Los contadores atómicos de PostgreSQL se comparten entre procesos y
+se reinician al vencer la ventana; no dependen de la IP del cliente.
+
+Los permisos se comprueban antes de consumir el cupo, y el límite se aplica antes
+de leer/generar la imagen o preparar el ZIP. Al agotarse se devuelve 429 con
+Retry-After; no se entrega una copia alternativa. El fotógrafo no usa estos cupos.
+No impide una extracción lenta desde una cuenta autorizada ni las capturas.
+Las vistas marcadas añaden no-transform para pedir a intermediarios que no
+modifiquen sus píxeles.
+
 ## Fuente tipográfica
 
 Noto Sans, The Noto Project Authors, SIL Open Font License 1.1. Copia íntegra de

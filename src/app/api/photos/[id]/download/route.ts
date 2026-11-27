@@ -5,6 +5,7 @@ import { contentDispositionAttachment } from "@/lib/security";
 import { getAccessiblePhoto } from "@/modules/photos/access";
 import { canDownloadGallery } from "@/modules/projects/delivery-policy";
 import { recordClientDelivery } from "@/modules/photos/delivery-log";
+import { limitClientDelivery } from "@/modules/photos/client-delivery-limit";
 
 import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 
@@ -26,6 +27,11 @@ export async function GET(
   }
   if (user.role === "CLIENT" && !canDownloadGallery(photo.project)) {
     return NextResponse.json({ error: "downloads_disabled" }, { status: 403 });
+  }
+
+  if (user.role === "CLIENT") {
+    const limited = await limitClientDelivery(user.id, "download");
+    if (limited) return limited;
   }
 
   try {

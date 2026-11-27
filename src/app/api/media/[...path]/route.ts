@@ -8,6 +8,7 @@ import { DeliveryBusy, readDeliveryPhoto } from "@/modules/photos/delivery";
 import { readProtectedPreview } from "@/modules/photos/protected-preview";
 import { previewCode } from "@/modules/photos/preview-identity";
 import { recordClientDelivery } from "@/modules/photos/delivery-log";
+import { limitClientDelivery } from "@/modules/photos/client-delivery-limit";
 
 export const runtime = "nodejs";
 
@@ -51,13 +52,18 @@ export async function GET(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  if (user.role === "CLIENT") {
+    const limited = await limitClientDelivery(user.id, isPreview ? "preview" : "download");
+    if (limited) return limited;
+  }
+
   try {
     if (user.role === "CLIENT" && isPreview && (photo.project.watermarkEnabled || !photo.thumbKey)) {
       const data = await readProtectedPreview(photo.storageKey, photo.project.watermarkText,
         previewCode(user.id, photo.projectId), request.nextUrl.searchParams.get("view") === "large", request.signal, photo.project.watermarkEnabled);
       await recordClientDelivery(user.id, photo.projectId, "PREVIEW", photo.filename, photo.id);
       return new NextResponse(new Uint8Array(data), { headers: {
-        "Content-Type": "image/webp", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Type": "image/webp", "Cache-Control": "private, no-store, no-transform", "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; sandbox",
       } });
     }
