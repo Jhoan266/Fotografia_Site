@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getAuthenticatedSession } from "@/lib/session";
+import { fitsPasswordLimit } from "@/lib/password-policy";
 
 export async function verifyVault(_previous: number | null, formData: FormData) {
   const password = formData.get("password");
   const session = await getAuthenticatedSession();
   if (!session || session.user.role !== "ADMIN" ||
-      typeof password !== "string" || !password || password.length > 128) {
+      typeof password !== "string" || !fitsPasswordLimit(password)) {
     return null;
   }
 

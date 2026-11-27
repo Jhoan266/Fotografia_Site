@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { requireUser } from "@/lib/session";
+import { getAuthenticatedSession } from "@/lib/session";
 import { logoutAction } from "@/lib/auth";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Icon } from "@/components/ui/Icon";
@@ -16,9 +16,11 @@ export default async function ClientLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const user = await requireUser();
+  const user = (await getAuthenticatedSession(true))?.user;
   if (!user) redirect(`/${locale}/login`);
+  if (user.mustChangePassword) redirect(`/${locale}/account/password`);
   const t = await getTranslations("client.portal");
+  const security = await getTranslations("accountSecurity");
   async function logout() {
     "use server";
     await logoutAction(locale);
@@ -102,6 +104,7 @@ export default async function ClientLayout({
               </summary>
               <div className="portal-account-menu">
                 <p>{user.email}</p>
+                <Link href={`/${locale}/account/password`}>{security("title")}</Link>
                 {user.role === "ADMIN" && (
                   <Link href={`/${locale}/admin`}>{t("backStudio")}</Link>
                 )}
@@ -120,6 +123,7 @@ export default async function ClientLayout({
           {children}
         </main>
         <footer className="portal-footer">
+          <Link href={`/${locale}/account/password`}>{security("title")}</Link>
           <Link href={`/${locale}`} className="portal-footer-brand">
             Vera Solís.
           </Link>

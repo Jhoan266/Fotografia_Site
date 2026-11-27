@@ -384,5 +384,28 @@
     "collections": "Vos collections",
     "collectionsIntro": "Images, personnes et histoires. Chaque séance dans son propre espace.",
     "contentStudio": "Créer mon site"
+  },
+  "accountSecurity": {
+    "label": "Votre compte, protégé",
+    "title": "Changer le mot de passe",
+    "firstTitle": "Créez votre mot de passe personnel.",
+    "firstHelp": "Avant de voir vos photos, remplacez le mot de passe temporaire par un mot de passe connu de vous seul.",
+    "description": "Votre mot de passe actuel est nécessaire. Toutes vos sessions seront fermées ; reconnectez-vous avec le nouveau mot de passe.",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe",
+    "confirm": "Répétez le nouveau mot de passe",
+    "help": "Utilisez au moins 12 caractères. Évitez les mots de passe très longs : accents et emojis prennent plus de place.",
+    "temporaryHelp": "Le client devra changer ce mot de passe avant de voir ses photos. Utilisez 12 à 72 caractères simples ; accents et emojis réduisent la limite.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "back": "Retour",
+    "success": "Mot de passe modifié. Toutes les sessions ont été fermées. Connectez-vous avec votre nouveau mot de passe.",
+    "errors": {
+      "unauthorized": "Votre session n’est plus valide. Reconnectez-vous.",
+      "invalid": "Les mots de passe doivent correspondre et contenir au moins 12 caractères. Raccourcissez le nouveau mot de passe s’il est très long.",
+      "current": "Le mot de passe actuel est incorrect.",
+      "same": "Choisissez un mot de passe différent.",
+      "rate": "Trop de tentatives. Attendez 15 minutes avant de réessayer."
+    }
   }
 }
