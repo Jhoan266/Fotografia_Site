@@ -728,7 +728,7 @@ async function login(email, totp) {
     }
     assert.notEqual((await attemptLogin(email)).status, 303);
     const loginPage = await page('/es/login');
-    const fresh = await submit('/es/login', loginPage.html, { email, password: nextPassword, locale:'es' });
+    const fresh = await submit('/es/login', loginPage.html, { email, password: nextPassword, locale:'es' }, '', undefined, proxyHeaders);
     assert.equal(fresh.r.status, 303);
     const freshCookie = fresh.r.headers.getSetCookie().find(c=>c.startsWith('vs_session='))?.split(';')[0];
     assert(freshCookie);
