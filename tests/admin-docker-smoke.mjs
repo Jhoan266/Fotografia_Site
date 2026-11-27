@@ -430,6 +430,7 @@ async function login(email, totp) {
     assert.equal(marked.r.status, 200);
     assert.equal(marked.r.headers.get('content-type'), 'image/webp');
     assert(marked.r.headers.get('cache-control').includes('no-store'));
+    assert(marked.r.headers.get('cache-control').includes('no-transform'));
     const markedBytes = Buffer.from(await (await fetch(base + protectedUrl, { headers: { cookie: client } })).arrayBuffer());
     const bypass = await fetch(base + protectedUrl + '?watermark=false&original=true', { headers: { cookie: client } });
     assert.equal(bypass.status, 200);
