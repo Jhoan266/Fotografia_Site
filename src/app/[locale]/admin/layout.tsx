@@ -19,8 +19,9 @@ export default async function AdminLayout({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
+  const a = await getTranslations("atelier");
   return (
-    <div className="studio-shell">
+    <div className="studio-shell atelier-shell">
       <a href="#studio-content" className="studio-skip">
         {t("studio.skip")}
       </a>
@@ -46,7 +47,7 @@ export default async function AdminLayout({
             vault: t("vault.title"),
           }}
         />
-        <Link href={`/${locale}/studio`} className="studio-nav-link ds-focus"><StudioIcon name="projects" />Estudio de contenido</Link>
+        <Link href={`/${locale}/studio`} className="studio-nav-link ds-focus"><StudioIcon name="projects" />{a("contentStudio")}</Link>
         <div className="studio-sidebar-bottom">
           <div className="studio-sidebar-note">
             <span className="section-label">{t("studio.yourSpace")}</span>

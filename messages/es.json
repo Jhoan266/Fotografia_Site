@@ -39,8 +39,8 @@
     "logout": "Salir",
     "admin": "Admin",
     "clients": "Clientes",
-    "projects": "Proyectos",
-    "panel": "Panel fotógrafo"
+    "projects": "Sesiones",
+    "panel": "Estudio fotográfico"
   },
   "hero": {
     "location": "Barcelona · España",
@@ -252,16 +252,16 @@
       "requestSuccess": "Tu solicitud ha quedado registrada. No se ha realizado ningún cobro.",
       "requestError": "No se pudo registrar. Inténtalo de nuevo.",
       "noCharge": "Se registra una solicitud, sin pago online.",
-      "home": "Mi panel",
+      "home": "Mi galería",
       "clientAccount": "Cuenta de cliente"
     }
   },
   "admin": {
     "panel": "Panel fotógrafo",
     "clients": "Clientes",
-    "projects": "Proyectos",
+    "projects": "Sesiones",
     "newClient": "Nuevo cliente",
-    "newProject": "Nuevo proyecto",
+    "newProject": "Nueva sesión",
     "name": "Nombre",
     "email": "Email",
     "phone": "Teléfono",
@@ -290,7 +290,7 @@
     "deletePhoto": "Eliminar",
     "welcome": "Hola, {name}",
     "dashboardDescription": "Tus clientes, sesiones y entregas en un solo lugar.",
-    "recentProjects": "Proyectos recientes",
+    "recentProjects": "Colecciones recientes",
     "viewAll": "Ver todos",
     "emptyProjects": "Todavía no hay proyectos",
     "emptyProjectsDescription": "Crea tu primera sesión y prepara una galería privada para tu cliente.",
@@ -368,5 +368,22 @@
       "empty": "Esta carpeta todavía está vacía.",
       "download": "Descargar original"
     }
+  },
+  "atelier": {
+    "studioLabel": "El estudio",
+    "studioIntro": "Un espacio para crear, compartir y cuidar cada historia.",
+    "spotlight": "Una historia reciente",
+    "firstStory": "Tu próxima historia empieza aquí.",
+    "firstStoryBody": "Crea una sesión y dale vida con tus fotografías.",
+    "creativeSpace": "Fotografía, con intención",
+    "heroTitle": "Tu mirada. Sus recuerdos.",
+    "heroBody": "Cada colección merece una entrega tan cuidada como las imágenes que contiene.",
+    "exploreCollections": "Explorar colecciones",
+    "nextChapter": "El siguiente capítulo",
+    "inProgress": "Sobre la mesa",
+    "connectionTitle": "Historias que conectan.",
+    "collections": "Tus colecciones",
+    "collectionsIntro": "Imágenes, personas e historias. Cada sesión, en su propio espacio.",
+    "contentStudio": "Diseñar mi web"
   }
 }

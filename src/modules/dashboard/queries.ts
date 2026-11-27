@@ -33,6 +33,7 @@ export async function getAdminDashboard() {
         title: true,
         status: true,
         sessionDate: true,
+        coverPhoto: { select: { thumbKey: true, storageKey: true, trashedAt: true } },
         client: { select: { user: { select: { name: true } } } },
         _count: { select: { photos: { where: { trashedAt: null } } } },
         photos: {

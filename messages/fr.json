@@ -39,8 +39,8 @@
     "logout": "Quitter",
     "admin": "Admin",
     "clients": "Clients",
-    "projects": "Projets",
-    "panel": "Espace photographe"
+    "projects": "Séances",
+    "panel": "Studio photo"
   },
   "hero": {
     "location": "Barcelone · Espagne",
@@ -251,16 +251,16 @@
       "requestSuccess": "Votre demande est enregistrée. Aucun paiement effectué.",
       "requestError": "Enregistrement impossible. Réessayez.",
       "noCharge": "Enregistre une demande sans paiement en ligne.",
-      "home": "Mon tableau de bord",
+      "home": "Ma galerie",
       "clientAccount": "Compte client"
     }
   },
   "admin": {
     "panel": "Espace photographe",
     "clients": "Clients",
-    "projects": "Projets",
+    "projects": "Séances",
     "newClient": "Nouveau client",
-    "newProject": "Nouveau projet",
+    "newProject": "Nouvelle séance",
     "name": "Nom",
     "email": "Email",
     "phone": "Téléphone",
@@ -289,7 +289,7 @@
     "deletePhoto": "Supprimer",
     "welcome": "Bonjour, {name}",
     "dashboardDescription": "Vos clients, séances et livraisons au même endroit.",
-    "recentProjects": "Projets récents",
+    "recentProjects": "Collections récentes",
     "viewAll": "Voir tout",
     "emptyProjects": "Aucun projet pour le moment",
     "emptyProjectsDescription": "Créez votre première séance et préparez une galerie privée pour votre client.",
@@ -367,5 +367,22 @@
       "empty": "Ce dossier est vide.",
       "download": "Télécharger l’original"
     }
+  },
+  "atelier": {
+    "studioLabel": "Le studio",
+    "studioIntro": "Un espace pour créer, partager et prendre soin de chaque histoire.",
+    "spotlight": "Une histoire récente",
+    "firstStory": "Votre prochaine histoire commence ici.",
+    "firstStoryBody": "Créez une séance et donnez-lui vie avec vos photographies.",
+    "creativeSpace": "La photographie, avec intention",
+    "heroTitle": "Votre regard. Leurs souvenirs.",
+    "heroBody": "Chaque collection mérite une livraison aussi soignée que les images qu’elle contient.",
+    "exploreCollections": "Explorer les collections",
+    "nextChapter": "Le prochain chapitre",
+    "inProgress": "Sur la table de travail",
+    "connectionTitle": "Des histoires qui rassemblent.",
+    "collections": "Vos collections",
+    "collectionsIntro": "Images, personnes et histoires. Chaque séance dans son propre espace.",
+    "contentStudio": "Créer mon site"
   }
 }

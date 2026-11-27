@@ -4,6 +4,8 @@ export function listProjectsForAdmin() {
   return prisma.project.findMany({
     include: {
       client: { include: { user: true } },
+      coverPhoto: { select: { thumbKey: true, storageKey: true, trashedAt: true } },
+      photos: { where: { trashedAt: null }, take: 1, orderBy: [{ sortOrder: "asc" }, { id: "asc" }], select: { thumbKey: true, storageKey: true } },
       _count: { select: { photos: { where: { trashedAt: null } } } },
     },
     orderBy: { createdAt: "desc" },
