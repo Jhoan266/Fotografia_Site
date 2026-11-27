@@ -447,6 +447,36 @@ async function login(email, totp) {
     assert.deepEqual(unmarked, adminPreview, 'Only the admin can explicitly disable preview watermarking');
     await settings(admin, false);
     console.log('PASS automatic protected previews, tamper resistance, admin opt-out, client review codes and grouped delivery logs');
+    {
+      const keys = ['preview', 'download', 'zip'].map(kind => `photo-delivery:${kind}:${ids[1]}`);
+      const seed = (key, count, resetAt = new Date(Date.now() + 60_000)) => prisma.rateLimitBucket.upsert({
+        where: { key }, create: { key, count, resetAt }, update: { count, resetAt },
+      });
+      try {
+        await seed(keys[0], 599);
+        assert.equal((await page(protectedUrl, client)).r.status, 200, 'Last allowed preview succeeds');
+        const denied = await Promise.all([page(protectedUrl, client), page(protectedUrl + '?view=large&nonce=1', client)]);
+        assert(denied.every(({r}) => r.status === 429), 'Parallel requests and URL variants share the account quota');
+        assert(denied.every(({r}) => Number(r.headers.get('retry-after')) >= 1));
+        assert.equal((await page(protectedUrl, admin)).r.status, 200, 'Client quota does not restrict the photographer');
+        assert.equal((await page(protectedUrl)).r.status, 401);
+        assert.equal((await prisma.rateLimitBucket.findUniqueOrThrow({where:{key:keys[0]}})).count, 602, 'Anonymous and admin requests do not consume client quota');
+        await seed(keys[0], 600, new Date(0));
+        assert.equal((await page(protectedUrl, client)).r.status, 200, 'Expired quota resets');
+        await settings(admin, true);
+        await seed(keys[1], 60);
+        assert.equal((await page(photoPath + '/download', client)).r.status, 429);
+        assert.equal((await page('/api/media/' + photo.storageKey + '?download=1', client)).r.status, 429, 'Direct media cannot bypass download quota');
+        await seed(keys[2], 6);
+        assert.equal((await page(adminZip, client)).r.status, 429, 'ZIP quota applies before streaming');
+        await settings(admin, false);
+        assert.equal((await page(photoPath + '/download', client)).r.status, 403, 'Permission rejection precedes quota');
+        assert.equal((await prisma.rateLimitBucket.findUniqueOrThrow({where:{key:keys[1]}})).count, 62);
+        console.log('PASS persistent client photo quotas, parallel requests, URL bypass rejection, reset and authorization precedence');
+      } finally {
+        await prisma.rateLimitBucket.deleteMany({where:{key:{in:keys}}});
+      }
+    }
     const legacyPhoto = await prisma.photo.findUniqueOrThrow({ where: { id: upload.ids[1] } });
     await prisma.photo.update({ where: { id: legacyPhoto.id }, data: { thumbKey: null } });
     try {
@@ -670,6 +700,7 @@ async function login(email, totp) {
   console.log('PASS logout revokes only the active session and expired sessions cannot access vault or ZIP');
 
  } finally {
+  await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.flatMap(id=>['preview','download','zip'].map(kind=>`photo-delivery:${kind}:${id}`))}}});
   await prisma.photoAuditEvent.deleteMany({where:{actorId:{in:ids}}});
   await prisma.user.deleteMany({where:{id:{in:ids}}});
   await prisma.$disconnect();
