@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { GalleryClient } from "@/components/client/GalleryClient";
 import { PackRequest } from "@/components/client/PackRequest";
 import { Icon } from "@/components/ui/Icon";
-import { requireUser } from "@/lib/session";
+import { getAuthenticatedSession } from "@/lib/session";
 import { createProjectOrder } from "@/modules/orders/actions";
 import { getClientProjectGallery } from "@/modules/projects/gallery-queries";
 import { isGalleryAvailable } from "@/modules/projects/delivery-policy";
@@ -17,8 +17,9 @@ export default async function ProjectGalleryPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  const user = await requireUser();
+  const user = (await getAuthenticatedSession(true))?.user;
   if (!user) redirect(`/${locale}/login`);
+  if (user.mustChangePassword) redirect(`/${locale}/account/password`);
   const t = await getTranslations("client");
   const p = await getTranslations("client.portal");
   const project = await getClientProjectGallery(id, user.id);

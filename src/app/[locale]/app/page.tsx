@@ -3,7 +3,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Icon } from "@/components/ui/Icon";
-import { requireUser } from "@/lib/session";
+import { getAuthenticatedSession } from "@/lib/session";
 import { getClientPortal } from "@/modules/portal/queries";
 
 export default async function ClientDashboardPage({
@@ -13,8 +13,9 @@ export default async function ClientDashboardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const user = await requireUser();
+  const user = (await getAuthenticatedSession(true))?.user;
   if (!user) redirect(`/${locale}/login`);
+  if (user.mustChangePassword) redirect(`/${locale}/account/password`);
   if (user.role === "ADMIN") redirect(`/${locale}/admin`);
   const t = await getTranslations("client.portal");
   const projects = await getClientPortal(user.id);

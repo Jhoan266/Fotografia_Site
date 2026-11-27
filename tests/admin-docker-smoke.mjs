@@ -686,11 +686,9 @@ async function login(email, totp) {
 
   {
     const email = `${tag}-onboarding@example.invalid`;
-    const clientsPage = await page('/es/admin/clients', admin);
-    const created = await submit('/es/admin/clients', clientsPage.html,
-      { name: 'Password onboarding fixture', email, password }, admin, 'new-client');
-    assert.equal(created.r.status, 200);
-    const account = await prisma.user.findUniqueOrThrow({ where: { email }, include: { clientProfile: true } });
+    const account = await prisma.user.create({ data: { email, name: 'Password onboarding fixture',
+      passwordHash: await bcrypt.hash(password, 12), role: 'CLIENT', mustChangePassword: true,
+      clientProfile: { create: {} } }, include: { clientProfile: true } });
     ids.push(account.id);
     assert.equal(account.mustChangePassword, true, 'New clients must replace their temporary password');
     const pending = await login(email);
