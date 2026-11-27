@@ -258,7 +258,7 @@
   "admin": {
     "panel": "Espace photographe",
     "clients": "Clients",
-    "projects": "Projets",
+    "projects": "Séances",
     "newClient": "Nouveau client",
     "newProject": "Nouvelle séance",
     "name": "Nom",
