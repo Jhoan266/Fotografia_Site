@@ -3,12 +3,14 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { loginAction, LoginState } from "@/lib/auth";
+import Link from "next/link";
 
 const initial: LoginState = {};
 
 export function LoginForm({ locale, passwordChanged = false }: { locale: string; passwordChanged?: boolean }) {
   const t = useTranslations("login");
   const security = useTranslations("accountSecurity");
+  const recovery = useTranslations("accountRecovery");
   const [state, formAction, pending] = useActionState(loginAction, initial);
 
   const errorMessage =
@@ -68,6 +70,7 @@ export function LoginForm({ locale, passwordChanged = false }: { locale: string;
         <span id="login-totp-help" className="block text-sm text-white/55">{t("totpHelp")}</span>
       </label>
       {errorMessage && <p className="text-sm text-red-300">{errorMessage}</p>}
+      <Link href={`/${locale}/reset-password`} className="block text-sm underline underline-offset-4">{recovery("forgot")}</Link>
       <button type="submit" className="btn-primary w-full" disabled={pending}>
         {pending ? "…" : t("submit")}
       </button>

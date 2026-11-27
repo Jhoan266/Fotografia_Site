@@ -685,6 +685,51 @@ async function login(email, totp) {
   }
 
   {
+    const email = `${tag}-recovery@example.invalid`;
+    const account = await prisma.user.create({data:{email,name:'Recovery fixture',role:'CLIENT',passwordHash:await bcrypt.hash(password,12),clientProfile:{create:{}}}});
+    ids.push(account.id);
+    const recoveryPath = `/api/clients/${account.id}/password-recovery`;
+    const issue = async (cookie=admin,origin=base,path=recoveryPath) => {
+      const r=await fetch(base+path,{method:'POST',headers:{cookie,Origin:origin},signal:AbortSignal.timeout(30_000)});
+      return {r,body:await r.json()};
+    };
+    assert.equal((await issue('')).r.status,401);
+    assert.equal((await issue(client)).r.status,401);
+    await prisma.authSession.updateMany({where:{userId:ids[0]},data:{vaultVerifiedUntil:new Date(0)}});
+    assert.equal((await issue()).r.status,403);
+    await verify(password);
+    assert.equal((await issue(admin,'https://untrusted.example')).r.status,403);
+    assert.equal((await issue(admin,base,`/api/clients/${ids[0]}/password-recovery`)).r.status,404,'Administrator recovery is never exposed');
+    const first=await issue();assert.equal(first.r.status,200);
+    const second=await issue();assert.equal(second.r.status,200);
+    assert.notEqual(first.body.code,second.body.code);
+    const stored=await prisma.passwordRecoveryToken.findUniqueOrThrow({where:{userId:account.id}});
+    assert.equal(stored.tokenHash,createHash('sha256').update(second.body.code).digest('hex'));
+    assert(!JSON.stringify(stored).includes(second.body.code));
+    assert(stored.expiresAt.getTime()>Date.now()+14*60_000&&stored.expiresAt.getTime()<Date.now()+16*60_000);
+    const oldSession=await login(email),anotherSession=await login(email);
+    const form=await page('/es/reset-password');assert.equal(form.r.status,200);
+    const nextPassword=randomUUID()+'Recovered!';
+    const reset=(code,pw=nextPassword)=>submit('/es/reset-password',form.html,{code,password:pw,confirmation:pw,locale:'es'},'','password-recovery');
+    assert.equal((await reset(first.body.code)).r.status,200,'Previous code is invalidated');
+    assert.equal((await reset(second.body.code,'😀'.repeat(19))).r.status,200);
+    const attempts=await Promise.all([reset(second.body.code),reset(second.body.code)]);
+    assert.deepEqual(attempts.map(x=>x.r.status).sort(),[200,303],'Exactly one concurrent use succeeds');
+    assert.equal(await prisma.passwordRecoveryToken.count({where:{userId:account.id}}),0);
+    assert.equal(await prisma.authSession.count({where:{userId:account.id}}),0);
+    for(const cookie of [oldSession,anotherSession])assert.equal((await page('/es/account/password',cookie)).r.status,307);
+    assert.equal((await reset(second.body.code)).r.status,200,'Used code cannot be replayed');
+    const updated=await prisma.user.findUniqueOrThrow({where:{id:account.id}});assert(await bcrypt.compare(nextPassword,updated.passwordHash));
+    const expired=await issue();assert.equal(expired.r.status,200);
+    await prisma.passwordRecoveryToken.update({where:{userId:account.id},data:{expiresAt:new Date(0)}});
+    assert.equal((await reset(expired.body.code)).r.status,200,'Expired code is rejected');
+    assert.equal((await prisma.user.findUniqueOrThrow({where:{id:account.id}})).passwordHash,updated.passwordHash);
+    const throttled=await issue();assert.equal(throttled.r.status,429);assert(Number(throttled.r.headers.get('retry-after'))>=1);
+    for(const locale of ['es','en','fr'])assert.equal((await page(`/${locale}/reset-password`)).r.status,200);
+    console.log('PASS assisted client recovery: admin reauthentication, role/origin limits, hashed secrets, replacement, expiry, concurrent single use and session revocation');
+  }
+
+  {
     const email = `${tag}-onboarding@example.invalid`;
     const account = await prisma.user.create({ data: { email, name: 'Password onboarding fixture',
       passwordHash: await bcrypt.hash(password, 12), role: 'CLIENT', mustChangePassword: true,
@@ -714,6 +759,7 @@ async function login(email, totp) {
     assert.equal((await submit(path, passwordPage.html, values, pending, 'password-change')).r.status, 200);
     assert.equal((await prisma.user.findUniqueOrThrow({where:{id:account.id}})).passwordHash, account.passwordHash);
     await prisma.rateLimitBucket.deleteMany({where:{key}});
+    await prisma.passwordRecoveryToken.create({data:{tokenHash:createHash('sha256').update(randomUUID()).digest('hex'),userId:account.id,issuerId:ids[0],expiresAt:new Date(Date.now()+900_000)}});
     console.log('PASS password validation, origin and rate rejection without writes');
     const [changed, racingLogin] = await Promise.all([
       submit(path, passwordPage.html, values, pending, 'password-change'), attemptLogin(email),
@@ -722,6 +768,7 @@ async function login(email, totp) {
     assert(changed.r.headers.get('location').includes('passwordChanged=1'));
     const updated = await prisma.user.findUniqueOrThrow({where:{id:account.id}});
     assert.equal(updated.mustChangePassword, false);
+    assert.equal(await prisma.passwordRecoveryToken.count({where:{userId:account.id}}),0,'Ordinary password rotation invalidates recovery codes');
     assert(await bcrypt.compare(nextPassword, updated.passwordHash));
     assert.equal(await prisma.authSession.count({where:{userId:account.id}}), 0, 'Password change revokes concurrent old-password logins');
     const racedCookie = racingLogin.headers.getSetCookie().find(c=>c.startsWith('vs_session='))?.split(';')[0];
@@ -758,6 +805,7 @@ async function login(email, totp) {
  } finally {
   await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.flatMap(id=>['preview','download','zip'].map(kind=>`photo-delivery:${kind}:${id}`))}}});
   await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.map(id=>`password-change:${id}`)}}});
+  await prisma.rateLimitBucket.deleteMany({where:{key:{in:ids.flatMap(id=>['password-recovery-issue:','password-recovery-target:','password-recovery-use:'].map(prefix=>prefix+id))}}});
   await prisma.photoAuditEvent.deleteMany({where:{actorId:{in:ids}}});
   await prisma.user.deleteMany({where:{id:{in:ids}}});
   await prisma.$disconnect();

@@ -46,6 +46,18 @@ model User {
   selections    Selection[]
   orders        Order[]
   sessions      AuthSession[]
+  recoveryToken PasswordRecoveryToken? @relation("RecoveryTarget")
+  issuedRecoveryTokens PasswordRecoveryToken[] @relation("RecoveryIssuer")
+}
+
+model PasswordRecoveryToken {
+  tokenHash String @id
+  userId String @unique
+  user User @relation("RecoveryTarget", fields: [userId], references: [id], onDelete: Cascade)
+  issuerId String
+  issuer User @relation("RecoveryIssuer", fields: [issuerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model ClientProfile {

@@ -35,6 +35,7 @@ export async function changePassword(_previous: PasswordChangeState, form: FormD
     });
     if (result.count !== 1) return false;
     await tx.authSession.deleteMany({ where: { userId: session.user.id } });
+    await tx.passwordRecoveryToken.deleteMany({ where: { userId: session.user.id } });
     return true;
   });
   if (!changed) return { error: "unauthorized" };

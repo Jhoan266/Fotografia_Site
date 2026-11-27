@@ -407,5 +407,21 @@
       "same": "Choose a different password.",
       "rate": "Too many attempts. Wait 15 minutes before trying again."
     }
+  },
+  "accountRecovery": {
+    "label": "Account recovery",
+    "title": "Return to your gallery.",
+    "help": "Ask your photographer for a recovery code through your usual channel. Enter it here and choose a new password. The code expires in 15 minutes and can only be used once. This form is for clients.",
+    "code": "Recovery code",
+    "save": "Reset password",
+    "back": "Back to sign in",
+    "forgot": "Forgot your password?",
+    "invalid": "The code is invalid, expired or already used. Ask your photographer for a new one.",
+    "adminTitle": "Recover client access",
+    "adminHelp": "Verify your identity first. Generating a code invalidates any previous code. Confirm the client’s identity before sharing it through a private channel.",
+    "generate": "Generate recovery code",
+    "generating": "Generating…",
+    "adminError": "The code could not be generated. Verify your password again or wait before retrying.",
+    "share": "Valid for 15 minutes and one use. Share this code privately with this address: {url}. The old password and all sessions will be invalidated when the client uses it."
   }
 }
