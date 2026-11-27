@@ -6,8 +6,9 @@ import { changePassword, type PasswordChangeState } from "@/modules/accounts/act
 
 export function PasswordChangeForm({ locale }: { locale: string }) {
   const t = useTranslations("accountSecurity");
-  const [state, action, pending] = useActionState(changePassword.bind(null, locale), {} as PasswordChangeState);
+  const [state, action, pending] = useActionState(changePassword, {} as PasswordChangeState);
   return <form id="password-change" action={action} aria-busy={pending}>
+    <input type="hidden" name="locale" value={locale} />
     <fieldset disabled={pending}>
       {([ ["currentPassword", "current", "current-password"], ["newPassword", "new", "new-password"],
         ["confirmation", "confirm", "new-password"] ] as const).map(([name, label, autoComplete]) =>

@@ -10,7 +10,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export type PasswordChangeState = { error?: "unauthorized" | "invalid" | "current" | "same" | "rate" };
 
-export async function changePassword(locale: string, _previous: PasswordChangeState, form: FormData): Promise<PasswordChangeState> {
+export async function changePassword(_previous: PasswordChangeState, form: FormData): Promise<PasswordChangeState> {
   const session = await getAuthenticatedSession(true);
   if (!session) return { error: "unauthorized" };
   const origin = (await headers()).get("origin");
@@ -39,6 +39,7 @@ export async function changePassword(locale: string, _previous: PasswordChangeSt
   });
   if (!changed) return { error: "unauthorized" };
   await endSession();
-  const safeLocale = ["es", "en", "fr"].includes(locale) ? locale : "es";
+  const locale = form.get("locale");
+  const safeLocale = typeof locale === "string" && ["es", "en", "fr"].includes(locale) ? locale : "es";
   redirect(`/${safeLocale}/login?passwordChanged=1`);
 }
