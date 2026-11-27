@@ -368,5 +368,22 @@
       "empty": "Esta carpeta todavía está vacía.",
       "download": "Descargar original"
     }
+  },
+  "atelier": {
+    "studioLabel": "El estudio",
+    "studioIntro": "Un espacio para crear, compartir y cuidar cada historia.",
+    "spotlight": "Una historia reciente",
+    "firstStory": "Tu próxima historia empieza aquí.",
+    "firstStoryBody": "Crea una sesión y dale vida con tus fotografías.",
+    "creativeSpace": "Fotografía, con intención",
+    "heroTitle": "Tu mirada. Sus recuerdos.",
+    "heroBody": "Cada colección merece una entrega tan cuidada como las imágenes que contiene.",
+    "exploreCollections": "Explorar colecciones",
+    "nextChapter": "El siguiente capítulo",
+    "inProgress": "Sobre la mesa",
+    "connectionTitle": "Historias que conectan.",
+    "collections": "Tus colecciones",
+    "collectionsIntro": "Imágenes, personas e historias. Cada sesión, en su propio espacio.",
+    "contentStudio": "Diseñar mi web"
   }
 }

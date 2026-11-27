@@ -382,7 +382,7 @@ export function GalleryClient({
 
       {active && (
         <div
-          className="fixed inset-0 z-[80] bg-black/95 p-3 md:p-6"
+          className="atelier-viewer fixed inset-0 z-[80] bg-black/95 p-3 md:p-6"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"

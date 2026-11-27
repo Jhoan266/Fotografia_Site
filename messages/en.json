@@ -367,5 +367,22 @@
       "empty": "This folder is empty.",
       "download": "Download original"
     }
+  },
+  "atelier": {
+    "studioLabel": "The studio",
+    "studioIntro": "A place to create, share and care for every story.",
+    "spotlight": "A recent story",
+    "firstStory": "Your next story starts here.",
+    "firstStoryBody": "Create a session and bring it to life with your photographs.",
+    "creativeSpace": "Photography, with intention",
+    "heroTitle": "Your vision. Their memories.",
+    "heroBody": "Every collection deserves a delivery as thoughtful as the images it holds.",
+    "exploreCollections": "Explore collections",
+    "nextChapter": "The next chapter",
+    "inProgress": "On the worktable",
+    "connectionTitle": "Stories that connect.",
+    "collections": "Your collections",
+    "collectionsIntro": "Images, people and stories. Every session in its own space.",
+    "contentStudio": "Design my website"
   }
 }

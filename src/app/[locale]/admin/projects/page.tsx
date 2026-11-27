@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CollectionCover } from "@/components/ui/CollectionCover";
 import {
   ActionLink,
   EmptyState,
@@ -20,14 +21,16 @@ export default async function AdminProjectsPage({
   const user = await requireRole("ADMIN");
   if (!user) redirect(`/${locale}/login`);
   const t = await getTranslations("admin");
+  const a = await getTranslations("atelier");
   const projects = await listProjectsForAdmin();
 
   return (
     <div>
       <section className="mx-auto max-w-6xl px-5 py-14 md:px-8">
         <PageHeading
-          eyebrow={t("panel")}
-          title={t("projects")}
+          eyebrow={t("projects")}
+          title={a("collections")}
+          description={a("collectionsIntro")}
           actions={
             <ActionLink href={`/${locale}/admin/projects/new`}>
               {t("newProject")}
@@ -51,8 +54,13 @@ export default async function AdminProjectsPage({
             <li key={p.id} className="ds-card p-5">
               <Link
                 href={`/${locale}/admin/projects/${p.id}`}
-                className="ds-focus group block rounded"
+              className="ds-focus group block rounded"
               >
+                <CollectionCover title={p.title} src={(() => {
+                  const photo = p.coverPhoto?.trashedAt === null ? p.coverPhoto : p.photos[0];
+                  return photo ? `/api/media/${photo.thumbKey || photo.storageKey}` : null;
+                })()} />
+                <div className="atelier-collection-info">
                 <div className="flex flex-wrap items-center gap-y-2 text-xs">
                   <StatusBadge status={p.status}>
                     {t(
@@ -75,6 +83,7 @@ export default async function AdminProjectsPage({
                 <p className="mt-1 break-words text-sm leading-relaxed text-white/55">
                   {p.client.user.name} · {p.client.user.email}
                 </p>
+                </div>
               </Link>
             </li>
           ))}

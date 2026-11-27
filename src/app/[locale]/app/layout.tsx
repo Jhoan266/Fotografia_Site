@@ -24,7 +24,7 @@ export default async function ClientLayout({
     await logoutAction(locale);
   }
   return (
-    <div className="portal-shell portal-dark studio-shell">
+    <div className="portal-shell portal-dark studio-shell atelier-shell">
       <a href="#portal-content" className="portal-skip">
         {t("skip")}
       </a>

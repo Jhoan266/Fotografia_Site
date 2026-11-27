@@ -1,4 +1,5 @@
 import { ActionLink, Button, PageHeading, StatusBadge } from "@/components/ui/design-system";
+import { CollectionCover } from "@/components/ui/CollectionCover";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { notFound, redirect } from "next/navigation";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
@@ -30,16 +31,21 @@ export default async function AdminProjectDetailPage({
     ? new Date(project.expiresAt.getTime() - 86_400_000).toISOString().slice(0, 10)
     : "";
   const activePhotos = project.photos.filter((photo) => photo.trashedAt === null);
+  const cover = activePhotos.find(photo => photo.id === project.coverPhotoId) ?? activePhotos[0];
   const trashedPhotos = project.photos.flatMap(({ id, filename, trashedAt }) => trashedAt ? [
     { id, filename, trashedAt: format.dateTime(trashedAt, { dateStyle: "medium" }) },
   ] : []);
 
   return (
-    <div>
+    <div className="atelier-project-detail">
       <section className="mx-auto max-w-6xl px-5 py-14 md:px-8">
         <PageHeading eyebrow={t("projects")} title={project.title}
           description={`${project.client.user.name} · ${project.client.user.email}`}
           actions={<ActionLink href={`/${locale}/admin/projects`} secondary>{t("backToProjects")}</ActionLink>} />
+        <div className="atelier-detail-cover"><CollectionCover title={project.title} src={cover ? `/api/media/${cover.thumbKey || cover.storageKey}` : null} priority /><span>{t("photos")} · {activePhotos.length}</span></div>
+        <nav className="atelier-section-nav" aria-label={t("projects")}>
+          <a href="#session-photos">{t("photos")}</a><a href="#session-upload">{t("upload")}</a><a href="#gallery-delivery-settings">{t("deliverySettings")}</a>
+        </nav>
         <div className="mt-4"><StatusBadge status={project.status}>
           {t(({ DRAFT: "draft", DELIVERED: "delivered", ARCHIVED: "archived" } as const)[project.status])}
         </StatusBadge></div>
@@ -100,12 +106,12 @@ export default async function AdminProjectDetailPage({
           photos={activePhotos.map(p => ({ id: p.id, filename: p.filename, albumId: p.albumId }))}
           coverPhotoId={activePhotos.some(p => p.id === project.coverPhotoId) ? project.coverPhotoId : null} />
 
-        <div className="ds-card mt-8 p-5 md:p-6">
+        <div id="session-upload" className="ds-card mt-8 p-5 md:p-6">
           <h2 className="font-display text-2xl">{t("upload")}</h2>
           <div className="mt-4"><UploadPanel projectId={project.id} label={t("upload")} /></div>
         </div>
 
-        <div className="ds-card mt-8 p-5 md:p-6">
+        <div id="session-photos" className="ds-card mt-8 p-5 md:p-6">
           <h2 className="font-display text-2xl">{t("photos")} ({activePhotos.length})</h2>
           <div className="mt-4">
             <AdminPhotoManager

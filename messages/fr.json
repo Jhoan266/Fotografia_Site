@@ -367,5 +367,22 @@
       "empty": "Ce dossier est vide.",
       "download": "Télécharger l’original"
     }
+  },
+  "atelier": {
+    "studioLabel": "Le studio",
+    "studioIntro": "Un espace pour créer, partager et prendre soin de chaque histoire.",
+    "spotlight": "Une histoire récente",
+    "firstStory": "Votre prochaine histoire commence ici.",
+    "firstStoryBody": "Créez une séance et donnez-lui vie avec vos photographies.",
+    "creativeSpace": "La photographie, avec intention",
+    "heroTitle": "Votre regard. Leurs souvenirs.",
+    "heroBody": "Chaque collection mérite une livraison aussi soignée que les images qu’elle contient.",
+    "exploreCollections": "Explorer les collections",
+    "nextChapter": "Le prochain chapitre",
+    "inProgress": "Sur la table de travail",
+    "connectionTitle": "Des histoires qui rassemblent.",
+    "collections": "Vos collections",
+    "collectionsIntro": "Images, personnes et histoires. Chaque séance dans son propre espace.",
+    "contentStudio": "Créer mon site"
   }
 }

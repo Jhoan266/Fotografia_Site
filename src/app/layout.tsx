@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, Outfit, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import "./editorial-refresh.css";
+import "./photography-workspaces.css";
 
 const syne = Syne({
   subsets: ["latin"],

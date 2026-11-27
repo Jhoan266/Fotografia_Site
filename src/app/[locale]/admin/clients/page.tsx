@@ -19,7 +19,7 @@ export default async function AdminClientsPage({
   const clients = await listClientsForAdmin();
 
   return (
-    <div>
+    <div className="atelier-clients">
       <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:px-8">
         <div>
           <p className="section-label">{t("clients")}</p>
@@ -36,7 +36,8 @@ export default async function AdminClientsPage({
           </div>
           <ul className="mt-4 space-y-4">
             {clients.map((c) => (
-              <li key={c.id} className="border-b border-white/10 pb-4">
+              <li key={c.id} className="atelier-client-card border-b border-white/10 pb-4">
+                <span className="atelier-client-initial" aria-hidden="true">{c.user.name.trim().charAt(0)}</span>
                 <p className="break-words text-lg">{c.user.name}</p>
                 <p className="break-words text-sm leading-relaxed text-white/55">
                   {c.user.email}
