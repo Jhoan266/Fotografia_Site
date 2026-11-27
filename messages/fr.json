@@ -39,8 +39,8 @@
     "logout": "Quitter",
     "admin": "Admin",
     "clients": "Clients",
-    "projects": "Projets",
-    "panel": "Espace photographe"
+    "projects": "Séances",
+    "panel": "Studio photo"
   },
   "hero": {
     "location": "Barcelone · Espagne",
@@ -251,7 +251,7 @@
       "requestSuccess": "Votre demande est enregistrée. Aucun paiement effectué.",
       "requestError": "Enregistrement impossible. Réessayez.",
       "noCharge": "Enregistre une demande sans paiement en ligne.",
-      "home": "Mon tableau de bord",
+      "home": "Ma galerie",
       "clientAccount": "Compte client"
     }
   },
@@ -260,7 +260,7 @@
     "clients": "Clients",
     "projects": "Projets",
     "newClient": "Nouveau client",
-    "newProject": "Nouveau projet",
+    "newProject": "Nouvelle séance",
     "name": "Nom",
     "email": "Email",
     "phone": "Téléphone",
@@ -289,7 +289,7 @@
     "deletePhoto": "Supprimer",
     "welcome": "Bonjour, {name}",
     "dashboardDescription": "Vos clients, séances et livraisons au même endroit.",
-    "recentProjects": "Projets récents",
+    "recentProjects": "Collections récentes",
     "viewAll": "Voir tout",
     "emptyProjects": "Aucun projet pour le moment",
     "emptyProjectsDescription": "Créez votre première séance et préparez une galerie privée pour votre client.",

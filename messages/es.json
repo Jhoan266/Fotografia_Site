@@ -39,8 +39,8 @@
     "logout": "Salir",
     "admin": "Admin",
     "clients": "Clientes",
-    "projects": "Proyectos",
-    "panel": "Panel fotógrafo"
+    "projects": "Sesiones",
+    "panel": "Estudio fotográfico"
   },
   "hero": {
     "location": "Barcelona · España",
@@ -252,7 +252,7 @@
       "requestSuccess": "Tu solicitud ha quedado registrada. No se ha realizado ningún cobro.",
       "requestError": "No se pudo registrar. Inténtalo de nuevo.",
       "noCharge": "Se registra una solicitud, sin pago online.",
-      "home": "Mi panel",
+      "home": "Mi galería",
       "clientAccount": "Cuenta de cliente"
     }
   },
@@ -261,7 +261,7 @@
     "clients": "Clientes",
     "projects": "Proyectos",
     "newClient": "Nuevo cliente",
-    "newProject": "Nuevo proyecto",
+    "newProject": "Nueva sesión",
     "name": "Nombre",
     "email": "Email",
     "phone": "Teléfono",
@@ -290,7 +290,7 @@
     "deletePhoto": "Eliminar",
     "welcome": "Hola, {name}",
     "dashboardDescription": "Tus clientes, sesiones y entregas en un solo lugar.",
-    "recentProjects": "Proyectos recientes",
+    "recentProjects": "Colecciones recientes",
     "viewAll": "Ver todos",
     "emptyProjects": "Todavía no hay proyectos",
     "emptyProjectsDescription": "Crea tu primera sesión y prepara una galería privada para tu cliente.",

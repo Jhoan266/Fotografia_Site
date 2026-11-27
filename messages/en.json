@@ -39,8 +39,8 @@
     "logout": "Log out",
     "admin": "Admin",
     "clients": "Clients",
-    "projects": "Projects",
-    "panel": "Photographer panel"
+    "projects": "Sessions",
+    "panel": "Photography studio"
   },
   "hero": {
     "location": "Barcelona · Spain",
@@ -251,7 +251,7 @@
       "requestSuccess": "Your request has been recorded. No payment has been made.",
       "requestError": "Could not record your request. Please try again.",
       "noCharge": "Records a request without an online payment.",
-      "home": "My dashboard",
+      "home": "My gallery",
       "clientAccount": "Client account"
     }
   },
@@ -260,7 +260,7 @@
     "clients": "Clients",
     "projects": "Projects",
     "newClient": "New client",
-    "newProject": "New project",
+    "newProject": "New session",
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
@@ -289,7 +289,7 @@
     "deletePhoto": "Delete",
     "welcome": "Hello, {name}",
     "dashboardDescription": "Your clients, sessions and deliveries in one place.",
-    "recentProjects": "Recent projects",
+    "recentProjects": "Recent collections",
     "viewAll": "View all",
     "emptyProjects": "No projects yet",
     "emptyProjectsDescription": "Create your first session and prepare a private gallery for your client.",
