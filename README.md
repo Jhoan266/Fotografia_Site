@@ -1,5 +1,7 @@
 # Vera Solís — Fotografía (plataforma)
 
+> **Para continuar en otro chat u otra IA:** leer [Informe de desarrollo y punto de relevo](CONTINUAR_DESARROLLO.md). Incluye el último módulo publicado, pruebas, arquitectura y pendientes. La rama `docs/continuity-handoff` contiene este informe; `main` no representa por sí sola todos los módulos publicados.
+
 Plataforma de portafolio público + área privada para entregar sesiones a clientes, seleccionar imágenes, comentar y descargar.
 
 ## Stack
