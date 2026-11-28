@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { Syne, Outfit, Instrument_Serif } from "next/font/google";
+import { Inter, Lora } from "next/font/google";
 import "./globals.css";
 import "./editorial-refresh.css";
 import "./photography-workspaces.css";
+import "./typography.css";
 
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-syne",
-  display: "swap",
-});
-
-const outfit = Outfit({
+// Keep the existing CSS tokens so saved editorial preferences remain compatible.
+const bodyFont = Inter({
   subsets: ["latin"],
   variable: "--font-outfit",
   display: "swap",
 });
 
-const instrument = Instrument_Serif({
+const headingFont = Lora({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-instrument",
   display: "swap",
@@ -35,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${syne.variable} ${outfit.variable} ${instrument.variable}`}>
+    <html lang="es" className={`${bodyFont.variable} ${headingFont.variable}`}>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
