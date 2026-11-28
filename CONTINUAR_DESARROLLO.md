@@ -21,8 +21,9 @@
 | Archivo desplegado | `fotografia_20261127_password_recovery.zip` |
 | Última CI funcional | [46078925730](https://github.com/Jhoan266/Fotografia_Site/actions/runs/46078925730): verify, restore y app-smoke correctos |
 | Rama de este informe | `docs/continuity-handoff`, basada en la rama funcional anterior |
+| PR del informe | [#47](https://github.com/Jhoan266/Fotografia_Site/pull/47), documentación publicada en GitHub |
 | Trabajo funcional sin terminar | Ninguno dentro del módulo #46. El correo automático sigue pendiente. |
-| Tarea inmediatamente anterior al relevo | Crear este informe, enlazarlo desde README y subirlo a GitHub. Solo documentación; no requiere desplegar la web. |
+| Tarea inmediatamente anterior al relevo | Informe creado, enlazado desde README y subido a GitHub en el PR #47. Solo documentación; no requiere desplegar la web. |
 
 **Distinción esencial:** que una rama esté publicada en Hostinger no significa que su PR esté fusionado en main. La web actual contiene módulos posteriores a main. Empezar una nueva implementación desde main puede perder trabajo ya publicado.
 
@@ -294,7 +295,8 @@ acceso desde README. Consultar su PR y git log para el commit documental.
 La documentación no cambia la versión publicada de la aplicación.
 
 EN CURSO: no hay una funcionalidad a medio implementar dentro de #46.
-PENDIENTE INMEDIATO: entregar al usuario el enlace GitHub del informe.
+DOCUMENTACIÓN TERMINADA: informe subido a GitHub en el PR #47.
+PENDIENTE INMEDIATO: el siguiente módulo funcional aún no se ha iniciado.
 DESPUÉS: continuar los pendientes de cierre descritos en la sección 10,
 sin prometer correo automático antes de disponer de remitente/proveedor.
 
