@@ -1,0 +1,130 @@
+/* A single reading scale for the public site, workspaces and account forms. */
+html {
+  --font-syne: var(--font-instrument);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body { font-size:16px; line-height:1.65; letter-spacing:normal; }
+input,textarea,select,button { font:inherit; letter-spacing:normal; }
+:where(h1,h2,h3,h4) { line-height:1.25; letter-spacing:normal; overflow-wrap:break-word; }
+
+.marketing-site :is(h1,h2,h3),
+.atelier-shell :is(.studio-main h1,.studio-main h2,.studio-main h3,.portal-welcome h1,.portal-feature-details h2,.portal-session-info h3,.portal-section-heading h2,.portal-guide h2,.portal-gallery-title h1,.portal-gallery-intro h2,.portal-albums-heading h2),
+.editorial-workspace :is(h1,h2,h3),.password-card h1 {
+  font-weight:400; line-height:1.25; letter-spacing:normal;
+}
+.marketing-site p { line-height:1.75; }
+.public-hero h1 { font-size:clamp(38px,4.8vw,68px); line-height:1.2; letter-spacing:normal; max-width:950px; margin-block:26px; }
+.public-hero-description { font-size:16px; max-width:600px; }
+.public-section-heading h2,.public-about-copy h2 { font-size:clamp(30px,3.3vw,46px); line-height:1.28; letter-spacing:normal; }
+.public-experience h2 { font-size:clamp(32px,3.6vw,48px); line-height:1.28; letter-spacing:normal; }
+.public-contact h2 { font-size:clamp(36px,4.4vw,62px); line-height:1.22; letter-spacing:normal; }
+.public-service-copy h3 { font-size:26px; line-height:1.3; }
+.public-process-grid h3 { font-size:24px; line-height:1.3; }
+.public-service-copy p,.public-process-grid p,.public-experience-copy > p:not(.public-eyebrow) { font-size:15px; line-height:1.8; }
+.public-gallery-illustration-cover strong { font-size:30px; line-height:1.3; }
+.public-eyebrow { font-size:11px; letter-spacing:.12em; line-height:1.6; }
+.public-desktop-nav { gap:24px; }
+.public-desktop-nav a,.public-client-link,.public-button,.public-text-link { font-size:13px; line-height:1.5; }
+.public-brand > span { letter-spacing:.12em; line-height:1.3; }
+.public-brand small,.public-signature small { font-size:10px; letter-spacing:.14em; line-height:1.6; }
+.public-hero-main figcaption,.public-hero-side figcaption { font-size:10px; letter-spacing:.12em; line-height:1.6; }
+.public-portfolio-photo > span { font-size:12px; line-height:1.5; }
+.public-footer-bottom { font-size:12px; line-height:1.7; }
+.public-signature { font-size:28px; line-height:1.4; }
+
+.atelier-shell .studio-brand strong { font-size:26px; line-height:1.3; letter-spacing:normal; }
+.atelier-shell .studio-brand small { font-size:9px; line-height:1.6; letter-spacing:.12em; }
+.atelier-shell .studio-nav-label { font-size:10px; letter-spacing:.12em; line-height:1.6; }
+.atelier-shell .studio-nav-link { font-size:14px; line-height:1.55; gap:12px; padding-block:14px; }
+.atelier-shell .studio-sidebar-note p { font-size:13px; line-height:1.8; }
+.atelier-shell .studio-sidebar-note a { font-size:13px; line-height:1.6; }
+.atelier-shell .studio-profile strong { font-size:13px; line-height:1.5; }
+.atelier-shell .studio-profile small { font-size:11px; line-height:1.5; }
+.atelier-shell .studio-topbar { height:auto; min-height:72px; padding-block:14px; flex-wrap:wrap; gap:12px 24px; }
+.atelier-shell .studio-topbar > div:first-child { flex-wrap:wrap; }
+.atelier-shell .studio-topbar :is(a,span) { line-height:1.5; }
+.atelier-shell .studio-page-heading { gap:28px; margin-bottom:36px; }
+.atelier-shell .studio-page-heading h1,.atelier-shell .studio-main h1,.atelier-shell .portal-welcome h1 { font-size:clamp(30px,3vw,40px); line-height:1.3; letter-spacing:normal; }
+.atelier-shell .studio-page-heading > div > p:last-child { font-size:15px; line-height:1.75; margin-top:16px; max-width:580px; }
+.atelier-shell :is(.studio-eyebrow,.portal-eyebrow,.section-label) { font-size:11px; line-height:1.6; letter-spacing:.12em; }
+.atelier-shell .atelier-feature-copy h2 { font-size:clamp(29px,2.8vw,38px); line-height:1.3; max-width:100%; margin-block:20px; }
+.atelier-feature-copy > p:not(.studio-eyebrow) { font-size:15px; line-height:1.85; max-width:36ch; }
+.atelier-photo-caption strong { font-size:clamp(28px,3vw,38px); line-height:1.28; letter-spacing:normal; }
+.atelier-photo-caption > span:first-child { font-size:10px; line-height:1.6; letter-spacing:.12em; }
+.atelier-photo-caption > span:last-child { font-size:13px; line-height:1.6; }
+.atelier-signature { font-size:25px; line-height:1.4; }
+.atelier-text-link,.atelier-shell .studio-text-link { font-size:13px; line-height:1.6; }
+.atelier-shell .studio-metric strong,.atelier-shell .portal-overview strong { font-size:30px; line-height:1.3; }
+.atelier-shell .studio-metric > span,.atelier-shell .portal-overview span { font-size:12px; line-height:1.6; }
+.atelier-shell .studio-metric { gap:14px; }
+.atelier-shell .studio-panel-heading h2,.atelier-shell .atelier-connections h2 { font-size:28px; line-height:1.3; }
+.atelier-shell .studio-panel-heading p:not(.studio-eyebrow) { font-size:13px; line-height:1.7; margin-top:10px; }
+.atelier-shell .studio-project-identity h3,.atelier-shell .workspace-project-list h2 { font-size:24px; line-height:1.35; }
+.atelier-shell .studio-project-identity p,.atelier-shell .workspace-project-list p { font-size:13px; line-height:1.75; margin-top:8px; }
+.atelier-shell :is(.studio-project-count,.studio-project-date,.studio-project-status > span) { font-size:12px; line-height:1.6; }
+.atelier-shell .studio-filters button { font-size:13px; line-height:1.6; }
+.atelier-shell .studio-filters button span { font-size:11px; }
+.atelier-shell :is(.studio-agenda h3,.studio-pending h3) { font-size:16px; line-height:1.5; }
+.atelier-shell :is(.studio-agenda p,.studio-pending p,.atelier-empty-inline) { font-size:13px; line-height:1.75; }
+.atelier-shell .studio-main .ds-card h2 { font-size:26px; line-height:1.35; }
+.atelier-shell :is(.studio-primary-button,.studio-outline-button,.ds-button,.btn-primary,.btn-ghost,.portal-button,.portal-album-button) { font-size:13px; line-height:1.5; letter-spacing:normal; }
+.atelier-shell .studio-main label > span { line-height:1.65; }
+.atelier-shell .input-field { font-size:15px; line-height:1.6; }
+.atelier-shell .portal-welcome > div > p:last-child { font-size:15px; line-height:1.8; margin-top:16px; }
+.atelier-shell .portal-handwritten { font-size:24px; line-height:1.5; }
+.atelier-shell .portal-feature-details h2 { font-size:clamp(29px,3vw,40px); line-height:1.3; }
+.atelier-shell .portal-feature-description,.atelier-shell .portal-feature-date,.atelier-shell .portal-feature-hint { font-size:14px; line-height:1.8; }
+.atelier-shell .portal-feature-numbers span { font-size:12px; line-height:1.6; }
+.atelier-shell .portal-ready { font-size:10px; letter-spacing:.06em; line-height:1.6; }
+.atelier-shell .portal-session-info h3 { font-size:25px; line-height:1.35; }
+.atelier-shell .portal-section-heading h2,.atelier-shell .portal-gallery-intro h2,.atelier-shell .portal-guide h2 { font-size:28px; line-height:1.35; }
+.atelier-shell .portal-session-info > p,.atelier-shell .portal-session-meta,.atelier-shell .portal-progress-heading,.atelier-shell .portal-card-link { font-size:12px; line-height:1.7; }
+.atelier-shell .portal-guide :is(p,li p) { font-size:13px; line-height:1.8; }
+.atelier-shell .portal-guide h3 { font-size:16px; line-height:1.5; }
+.atelier-shell .portal-gallery-title h1 { font-size:clamp(34px,4vw,56px); line-height:1.25; letter-spacing:normal; }
+.atelier-shell .portal-gallery-intro > p { font-size:14px; line-height:1.8; }
+.atelier-shell .portal-photo-caption { font-size:12px; line-height:1.6; gap:12px; }
+.atelier-shell .portal-gallery-toolbar [aria-pressed] { font-size:13px; line-height:1.6; }
+.atelier-shell .portal-gallery-content .ds-card p { font-size:14px; line-height:1.8; }
+.atelier-shell .portal-footer { font-size:12px; line-height:1.7; flex-wrap:wrap; }
+.login-art-copy > p { font-size:38px; line-height:1.35; }
+.login-page form > div:first-of-type h1 { font-size:36px; line-height:1.3; letter-spacing:normal; }
+.login-page form label > span { font-size:12px; line-height:1.6; letter-spacing:.08em; }
+.editorial-workspace > aside h1 { font-size:28px; line-height:1.35; }
+.editorial-workspace > aside nav a { font-size:14px; line-height:1.6; }
+.editorial-workspace > section > h2 { font-size:34px; line-height:1.35; }
+.password-card h1 { font-size:34px; line-height:1.3; }
+.password-card > p:not(.password-eyebrow),.password-card label,.password-help,.password-card > a { font-size:14px; line-height:1.8; }
+.password-eyebrow { font-size:11px; letter-spacing:.12em; line-height:1.6; }
+.client-recovery p,.client-recovery label { font-size:13px; line-height:1.8; }
+.collection-monogram { line-height:1.25; }
+
+@media(max-width:760px) {
+  .public-hero h1 { font-size:38px; line-height:1.25; letter-spacing:normal; }
+  .public-section-heading h2,.public-about-copy h2,.public-experience h2 { font-size:30px; line-height:1.3; }
+  .public-contact h2 { font-size:38px; line-height:1.25; }
+  .public-brand > span { font-size:18px; letter-spacing:.09em; }
+  .public-brand small { font-size:9px; letter-spacing:.12em; }
+  .public-mobile-nav a { font-size:15px; line-height:1.65; }
+  .public-hero-main figcaption,.public-hero-side figcaption { letter-spacing:.08em; font-size:9px; }
+  .atelier-shell .studio-brand strong { font-size:25px; line-height:1.3; }
+  .atelier-shell .studio-brand small { font-size:9px; letter-spacing:.12em; }
+  .atelier-shell .studio-page-heading h1,.atelier-shell .studio-main h1,.atelier-shell .portal-welcome h1 { font-size:30px; line-height:1.35; }
+  .atelier-shell .atelier-feature-copy h2 { font-size:30px; line-height:1.35; }
+  .atelier-photo-caption strong { font-size:29px; line-height:1.3; }
+  .atelier-shell .studio-panel-heading h2 { font-size:26px; line-height:1.35; }
+  .atelier-shell .studio-heading-actions { gap:14px; flex-wrap:wrap; }
+  .atelier-shell .studio-heading-actions > a { font-size:12px; }
+  .atelier-shell .portal-feature-details h2 { font-size:30px; line-height:1.35; }
+  .atelier-shell .portal-gallery-title h1 { font-size:36px; line-height:1.3; }
+  .atelier-shell .portal-overview span,.atelier-shell .studio-metric > span { font-size:12px; line-height:1.6; }
+  .atelier-shell .portal-photo-caption { font-size:11px; line-height:1.6; }
+  .atelier-shell .portal-photo-caption button { font-size:11px; }
+  .password-card h1 { font-size:30px; line-height:1.35; }
+}
+@media(max-width:700px) {
+  .atelier-shell:not(.portal-shell) .studio-navigation .studio-nav-link,
+  .atelier-shell.portal-shell .studio-navigation .studio-nav-link { font-size:11px; line-height:1.6; gap:9px; padding-block:13px; }
+  .atelier-shell .studio-topbar { min-height:62px; }
+}
